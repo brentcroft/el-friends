@@ -18,10 +18,16 @@ public class ModelItemTest
         assertEquals("bloggs", item.get( "fred" ));
     }
 
-
     @Test
     public void overwritesModelItemFromPropertiesFile() {
         ModelItem item = ModelItem.of( null, "{ '$json': 'src/test/resources/root-02.json' }" );
         assertEquals("boot", item.get( "foot" ));
+    }
+
+    @Test
+    public void insertsModelItem() {
+        ModelItem item = ModelItem.of( null, "{ 'fred': 'bloggs' }" );
+        item.insertModelItem( "inserted", "{ 'fred': { 'head': 'nose' } }" );
+        assertEquals("nose", item.getItem( "inserted.fred" ).get("head"));
     }
 }

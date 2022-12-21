@@ -3,6 +3,7 @@ package com.brentcroft.tools.model;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,11 +14,9 @@ import java.nio.file.Files;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static java.lang.String.format;
 import static java.util.Objects.nonNull;
-import static java.util.stream.IntStream.range;
 
 @Getter
 @Setter
@@ -35,6 +34,9 @@ public class ModelItem extends LinkedHashMap<String,Object>
     private String name;
     private Map<String, Object> parent;
 
+    public ModelItem getSelf() {
+        return this;
+    }
 
     public ModelItem getRoot() {
         return Optional
@@ -44,6 +46,32 @@ public class ModelItem extends LinkedHashMap<String,Object>
                 .map( ModelItem::getRoot )
                 .orElse( this );
     }
+    public ModelItem getItem(String key) {
+        Object node = null;
+        for ( String p : key.split("\\s*\\.\\s*") ) {
+            if ( node == null ) {
+                node = get(p);
+            } else if ( node instanceof Map) {
+                node = ((Map<?,?>)node).get( p );
+            } else if (node instanceof ObjectNode ) {
+                node = ((ObjectNode)node).get(p);
+            } else {
+                throw new IllegalArgumentException(format("Unknown type: '%s' at step '%s' in path '%s'", node, p, key));
+            }
+        }
+        if (node instanceof ModelItem)
+        {
+            return (ModelItem)node;
+        }
+        throw new IllegalArgumentException(format("Object at path '%s' is not a ModeItem: '%s'",
+                key,
+                Optional
+                .ofNullable(node)
+                .map( Object::getClass )
+                .map( Class::getSimpleName )
+                .orElse( null )));
+    }
+
 
     public Object get(String key) {
         return Optional
@@ -71,7 +99,7 @@ public class ModelItem extends LinkedHashMap<String,Object>
                 .orElse( name );
     }
 
-    private File getJsonPath()
+    private File getCurrentDirectory()
     {
         return Optional
                 .ofNullable( parent )
@@ -120,7 +148,6 @@ public class ModelItem extends LinkedHashMap<String,Object>
         for (String key : item.keySet() ) {
             Object value = item.get(key);
             if (value instanceof Map){
-                Map<?,?> valueMap = (Map<?,?>) value;
                 if (value instanceof ModelItem) {
                     ModelItem childItem = (ModelItem) value;
                     childItem.setName( key );
@@ -151,7 +178,7 @@ public class ModelItem extends LinkedHashMap<String,Object>
     {
         File file = new File(propertiesFilePath);
         if (!file.exists()) {
-            file = new File( getJsonPath(), propertiesFilePath );
+            file = new File( getCurrentDirectory(), propertiesFilePath );
         }
         final Properties p = new Properties();
         try (FileInputStream fis = new FileInputStream( file )) {
@@ -200,7 +227,7 @@ public class ModelItem extends LinkedHashMap<String,Object>
     {
         File file = new File(filePath);
         if (!file.exists()) {
-            file = new File( getJsonPath(), filePath );
+            file = new File( getCurrentDirectory(), filePath );
 
         }
         try
