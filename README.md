@@ -1,2 +1,2 @@
 # el-friends
-Hierarchical map friendly for EL.
+Hierarchical map friendly to EL.
