@@ -188,7 +188,12 @@ public class ModelItem extends LinkedHashMap<String,Object>
     private void overwriteFromFile( String jsonFilePath )
     {
         ModelItem item = ModelItem.of( this, readFileFully(jsonFilePath) );
-        putAll( item );
+        putAll( item
+                .entrySet()
+                .stream()
+                .filter( entry -> ! entry.getKey().startsWith( "$json" ))
+                .filter( entry -> ! entry.getKey().startsWith( "$properties" ))
+                .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) ));
     }
 
     private String readFileFully( String filePath )
