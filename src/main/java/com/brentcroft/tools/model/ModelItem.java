@@ -254,7 +254,7 @@ public class ModelItem extends LinkedHashMap<String,Object>
         }
     }
 
-    private String expand( String p )
+    public String expand( String p )
     {
         return valueTransformer.apply( p, this );
     }
