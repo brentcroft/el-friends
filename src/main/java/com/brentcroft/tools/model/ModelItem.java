@@ -12,6 +12,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -22,7 +23,7 @@ import static java.util.Objects.nonNull;
 @Setter
 public class ModelItem extends LinkedHashMap<String,Object>
 {
-    protected static final JsonMapper jsonMapper = JsonMapper
+    private static JsonMapper jsonMapper = JsonMapper
             .builder()
             .enable( JsonReadFeature.ALLOW_JAVA_COMMENTS )
             .enable( JsonReadFeature.ALLOW_SINGLE_QUOTES )
@@ -30,13 +31,24 @@ public class ModelItem extends LinkedHashMap<String,Object>
             .enable( JsonReadFeature.ALLOW_UNQUOTED_FIELD_NAMES )
             .enable( JsonReadFeature.ALLOW_TRAILING_COMMA )
             .build();
-    protected static Function<Object,Object> valueTransformer = Function.identity();
+
+    private static BiFunction<String, ModelItem, String> valueTransformer = (value, context) -> value;
+
+    public static void setValueTransformer(BiFunction<String, ModelItem, String> valueTransformer) {
+        ModelItem.valueTransformer = valueTransformer;
+    }
+    public static BiFunction<String, ModelItem, String> getValueTransformer() {
+        return ModelItem.valueTransformer;
+    }
+    public static void setJsonMapper(JsonMapper jsonMapper) {
+        ModelItem.jsonMapper = jsonMapper;
+    }
+    public static JsonMapper getJsonMapper() {
+        return ModelItem.jsonMapper;
+    }
+
     private String name;
     private Map<String, Object> parent;
-
-    public ModelItem getSelf() {
-        return this;
-    }
 
     public ModelItem getRoot() {
         return Optional
@@ -86,7 +98,8 @@ public class ModelItem extends LinkedHashMap<String,Object>
                             return  v instanceof String
                                     ? expand((String)v)
                                     : v;
-                        }));
+                        })
+                        .orElse( null ));
     }
 
     public String path() {
@@ -174,7 +187,7 @@ public class ModelItem extends LinkedHashMap<String,Object>
         }
     }
 
-    private void overwritePropertiesFromFile( String propertiesFilePath )
+    public void overwritePropertiesFromFile( String propertiesFilePath )
     {
         File file = new File(propertiesFilePath);
         if (!file.exists()) {
@@ -212,7 +225,7 @@ public class ModelItem extends LinkedHashMap<String,Object>
         } );
     }
 
-    private void overwriteFromFile( String jsonFilePath )
+    public void overwriteFromFile( String jsonFilePath )
     {
         ModelItem item = ModelItem.of( this, readFileFully(jsonFilePath) );
         putAll( item
@@ -223,12 +236,11 @@ public class ModelItem extends LinkedHashMap<String,Object>
                 .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) ));
     }
 
-    private String readFileFully( String filePath )
+    public String readFileFully( String filePath )
     {
         File file = new File(filePath);
         if (!file.exists()) {
             file = new File( getCurrentDirectory(), filePath );
-
         }
         try
         {
@@ -242,9 +254,9 @@ public class ModelItem extends LinkedHashMap<String,Object>
         }
     }
 
-    private Object expand( String p )
+    private String expand( String p )
     {
-        return valueTransformer.apply( p );
+        return valueTransformer.apply( p, this );
     }
 
     public String  toJson()
@@ -259,5 +271,13 @@ public class ModelItem extends LinkedHashMap<String,Object>
         {
             throw new IllegalArgumentException(format("ModelItem at path: %s", path()), e);
         }
+    }
+
+    public String toString() {
+        return path();
+    }
+
+    public ModelItem getSelf() {
+        return this;
     }
 }
