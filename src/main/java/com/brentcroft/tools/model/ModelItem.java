@@ -85,19 +85,15 @@ public class ModelItem extends LinkedHashMap<String,Object>
     }
 
 
-    public Object get(String key) {
+    public Object get(Object key) {
         return Optional
                 .ofNullable( super.get( key ) )
-                .map( p -> p instanceof String
-                    ? expand((String)p)
-                    : p)
+                .map( p -> p instanceof String ? expand((String)p) : p)
                 .orElseGet( () -> Optional
                         .ofNullable( parent )
                         .map( p -> {
                             Object v = p.get(key);
-                            return  v instanceof String
-                                    ? expand((String)v)
-                                    : v;
+                            return  v instanceof String ? expand((String)v) : v;
                         })
                         .orElse( null ));
     }

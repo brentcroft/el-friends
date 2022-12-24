@@ -68,6 +68,12 @@
 			<version>${junit.version}</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>com.brentcroft.tools</groupId>
+			<artifactId>el-plates</artifactId>
+			<version>01.02.02</version>
+			<scope>test</scope>
+		</dependency>
 		<!--
 			PROVIDED ONLY
 		-->

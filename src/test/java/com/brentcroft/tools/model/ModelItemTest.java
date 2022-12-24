@@ -1,7 +1,7 @@
 package com.brentcroft.tools.model;
 
 import org.junit.Test;
-
+import com.brentcroft.tools.jstl.JstlTemplateManager;
 import static org.junit.Assert.assertEquals;
 
 public class ModelItemTest
@@ -29,5 +29,17 @@ public class ModelItemTest
         ModelItem item = ModelItem.of( null, "{ 'fred': 'bloggs' }" );
         item.insertModelItem( "inserted", "{ 'fred': { 'head': 'nose' } }" );
         assertEquals("nose", item.getItem( "inserted.fred" ).get("head"));
+    }
+
+
+    @Test
+    public void usesExpander() {
+        JstlTemplateManager jstl = new JstlTemplateManager();
+        ModelItem.setValueTransformer( jstl::expandText );
+        ModelItem item = ModelItem.of( null, "{ 'fred': 'bloggs' }" );
+
+        item.insertModelItem( "inserted", "{ 'fred': { 'head': '${ hair }', 'hair': 'red' } }" );
+        assertEquals("red", item.getItem( "inserted.fred" ).get("head"));
+        assertEquals("red", jstl.expandText( "${ inserted.fred['head'] }", item ));
     }
 }
