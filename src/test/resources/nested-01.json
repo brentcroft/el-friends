@@ -1,0 +1,6 @@
+{
+  "$json": "nested-02.json",
+  "level": 1,
+  "name": "first-level",
+  "days": { "$json":  "days.json" }
+}

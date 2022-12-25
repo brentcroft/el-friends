@@ -32,13 +32,20 @@ public class ModelItem extends LinkedHashMap<String,Object>
             .enable( JsonReadFeature.ALLOW_TRAILING_COMMA )
             .build();
 
-    private static BiFunction<String, ModelItem, String> valueTransformer = (value, context) -> value;
+    private static BiFunction<String, ModelItem, String> expander = ( value, context) -> value;
+    private static BiFunction<String, ModelItem, Object> evaluator = (value, context) -> value;
 
-    public static void setValueTransformer(BiFunction<String, ModelItem, String> valueTransformer) {
-        ModelItem.valueTransformer = valueTransformer;
+    public static void setExpander( BiFunction<String, ModelItem, String> expander ) {
+        ModelItem.expander = expander;
     }
-    public static BiFunction<String, ModelItem, String> getValueTransformer() {
-        return ModelItem.valueTransformer;
+    public static BiFunction<String, ModelItem, String> getExpander() {
+        return ModelItem.expander;
+    }
+    public static void setEvaluator(BiFunction<String, ModelItem, Object> evaluator) {
+        ModelItem.evaluator = evaluator;
+    }
+    public static BiFunction<String, ModelItem, Object> getEvaluator() {
+        return ModelItem.evaluator;
     }
     public static void setJsonMapper(JsonMapper jsonMapper) {
         ModelItem.jsonMapper = jsonMapper;
@@ -111,12 +118,20 @@ public class ModelItem extends LinkedHashMap<String,Object>
     private File getCurrentDirectory()
     {
         return Optional
-                .ofNullable( parent )
-                .map( p -> p.get( "$json" ).toString() )
-                .map( File::new )
-                .map( File::getParentFile )
+                .ofNullable( (String)get("$currentDirectory") )
+                .map(File::new)
                 .orElse( null );
     }
+
+    private void setCurrentDirectory( File file )
+    {
+        File cd = getCurrentDirectory();
+
+        if ( cd == null || !cd.equals( file ) ) {
+            put("$currentDirectory", file.getPath());
+        }
+    }
+
 
     public static ModelItem of(Map< String, Object> parent, String jsonText) {
         ModelItem item;
@@ -229,6 +244,11 @@ public class ModelItem extends LinkedHashMap<String,Object>
                 .stream()
                 .filter( entry -> ! entry.getKey().startsWith( "$json" ))
                 .filter( entry -> ! entry.getKey().startsWith( "$properties" ))
+                .peek( entry -> {
+                    if ( entry.getValue() instanceof ModelItem ) {
+                        ((ModelItem)entry.getValue()).setParent( this );
+                    }
+                } )
                 .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) ));
     }
 
@@ -238,6 +258,10 @@ public class ModelItem extends LinkedHashMap<String,Object>
         if (!file.exists()) {
             file = new File( getCurrentDirectory(), filePath );
         }
+        if (!file.exists()) {
+            throw new IllegalArgumentException(format("File does not exist: %s", filePath));
+        }
+        setCurrentDirectory(file.getParentFile());
         try
         {
             return String
@@ -250,9 +274,34 @@ public class ModelItem extends LinkedHashMap<String,Object>
         }
     }
 
-    public String expand( String p )
+
+    /**
+     * Expands a value using the expander
+     * or else just returns the value.
+     *
+     * @param value the value to be expanded
+     * @return the expanded value
+     */
+    public String expand( String value )
     {
-        return valueTransformer.apply( p, this );
+        return Optional
+            .ofNullable(expander)
+            .map(exp -> exp.apply( value, this ) )
+            .orElse( value );
+    }
+    /**
+     * Evaluates a value using the evaluator
+     * or else just returns the value.
+     *
+     * @param value the value to be evaluated
+     * @return the evaluated value
+     */
+    public Object eval( String value )
+    {
+        return Optional
+                .ofNullable(evaluator)
+                .map(exp -> exp.apply( value, this ) )
+                .orElse( value );
     }
 
     public String  toJson()

@@ -1,0 +1,7 @@
+{
+  "monday": {},
+  "tuesday": {},
+  "wednesday": { "$json": "wednesday.json" },
+  "thursday": {},
+  "friday": {}
+}
