@@ -169,7 +169,7 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
             file = new File( getCurrentDirectory(), filePath );
         }
         if (!file.exists()) {
-            throw new IllegalArgumentException(format("File does not exist: %s", filePath));
+            throw new IllegalArgumentException(format("File does not exist: %s", file));
         }
         setCurrentDirectory(file.getParentFile());
         try

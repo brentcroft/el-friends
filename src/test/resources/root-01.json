@@ -1,4 +1,5 @@
 {
   "andy": "capp",
-  "fred": "bloggs"
+  "fred": "bloggs",
+  "sub": { "$json":  "sub01/root-02.json" }
 }

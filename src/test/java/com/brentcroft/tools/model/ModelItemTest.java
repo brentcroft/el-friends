@@ -41,7 +41,7 @@ public class ModelItemTest
 
     @Test
     public void overwritesModelItemFromPropertiesFile() {
-        Model item = new ModelItem().appendFromJson( "{ '$json': 'src/test/resources/root-02.json' }" );
+        Model item = new ModelItem().appendFromJson( "{ '$json': 'src/test/resources/sub01/root-02.json' }" );
         assertEquals("boot", item.get( "foot" ));
     }
 

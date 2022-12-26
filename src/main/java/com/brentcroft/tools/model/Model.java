@@ -102,7 +102,6 @@ public interface Model extends Map<String,Object>
         return item;
     }
 
-
     @SuppressWarnings( "unchecked" )
     default void transformMapsToItems( Map<String,Object> item )
     {
@@ -120,7 +119,6 @@ public interface Model extends Map<String,Object>
 
                     childItem.putAll( (Map< String, Object> ) value );
                     transformMapsToItems(childItem);
-                    childItem.introspectEntries();
                     item.put( key, childItem );
                 }
             }
