@@ -198,7 +198,8 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
     public String expand( String value )
     {
         MapBindings bindings = new MapBindings(this);
-        bindings.put( "self", this );
+        bindings.put( "$self", getSelf() );
+        bindings.put( "$parent", getParent() );
         return Optional
             .ofNullable(expander)
             .map(exp -> exp.apply( value, bindings ) )

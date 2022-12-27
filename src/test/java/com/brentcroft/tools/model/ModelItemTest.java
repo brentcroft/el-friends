@@ -7,17 +7,40 @@ import static org.junit.Assert.assertEquals;
 
 public class ModelItemTest
 {
-    @Before
-    public void configureJstl() {
-        JstlTemplateManager jstl = new JstlTemplateManager();
-        AbstractModelItem.setExpander( jstl::expandText );
-        AbstractModelItem.setEvaluator( jstl::eval );
-    }
-
     @Test
     public void createsModelItemFromJson() {
         Model item = new ModelItem().appendFromJson( "{ 'fred': 'bloggs' }" );
         assertEquals("bloggs", item.get( "fred" ));
+    }
+
+
+    @Test
+    public void assignsToSelf() {
+        Model item = new ModelItem();
+        item.eval( "$self" );
+        assertEquals(item, item.eval( "$self" ));
+    }
+    @Test
+    public void assignsToSelf02() {
+        Model item = new ModelItem()
+                .appendFromJson( "{ 'fred': 'bloggs' }" )
+                .appendFromJson( "{ 'surname': 'bloggs' }" );
+        item.eval( "$self.fred = surname" );
+        assertEquals("bloggs", item.get( "fred" ));
+    }
+
+    @Test
+    public void assignsToParent01() {
+        Model item = new ModelItem().insertFromJson( "someChild", "{}" );
+        assertEquals(item, item.getItem( "someChild" ).eval( "$parent" ));
+    }
+
+    @Test
+    public void assignsToParent02() {
+        Model item = new ModelItem()
+                .appendFromJson( "{ 'fred': 'bloggs', 'xyz': { 'surname': 'bloggs' } }" );
+        item.getItem( "xyz" ).eval( "$parent.blue = 'green'" );
+        assertEquals("green", item.get( "blue" ));
     }
 
     @Test
@@ -56,18 +79,20 @@ public class ModelItemTest
 
     @Test
     public void usesExpander() {
-        Model item = new ModelItem().appendFromJson( "{ 'fred': 'bloggs' }" );
-        Model insertedItem = item.insertFromJson( "inserted", "{ 'fred': { 'head': '${ hair }', 'hair': 'red' } }" );
+        Model item = new ModelItem()
+                .appendFromJson( "{ 'fred': 'bloggs' }" )
+                .insertFromJson( "inserted", "{ 'fred': { 'head': '${ hair }', 'hair': 'red' } }" );
 
-        assertEquals("red", insertedItem.getItem( "fred" ).get("head"));
+        assertEquals("red", item.getItem( "inserted.fred" ).get("head"));
         assertEquals("red", item.expand( "${ inserted.fred['head'] }" ));
         assertEquals("red", item.expand( "${ inserted.fred.head }" ));
     }
 
     @Test
     public void usesEvaluator() {
-        Model item = new ModelItem().appendFromJson( "{ 'fred': 'bloggs' }" );
-        item.insertFromJson( "inserted", "{ 'fred': { 'head': '${ hair }', 'hair': 'red' } }" );
+        Model item = new ModelItem()
+                .appendFromJson( "{ 'fred': 'bloggs' }" )
+                .insertFromJson( "inserted", "{ 'fred': { 'head': '${ hair }', 'hair': 'red' } }" );
 
         Model expected = item.getItem( "inserted.fred" );
         assertEquals(expected, item.eval( "inserted.fred" ) );
