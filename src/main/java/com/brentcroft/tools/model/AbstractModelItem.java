@@ -1,10 +1,10 @@
 package com.brentcroft.tools.model;
 
-import com.brentcroft.tools.jstl.JstlTemplateManager;
-import com.brentcroft.tools.jstl.MapBindings;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,7 +13,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.*;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -23,7 +22,7 @@ import static java.lang.String.format;
 @Setter
 public abstract class AbstractModelItem extends LinkedHashMap<String,Object> implements Model
 {
-    private static JsonMapper jsonMapper = JsonMapper
+    protected static JsonMapper JSON_MAPPER = JsonMapper
             .builder()
             .enable( JsonReadFeature.ALLOW_JAVA_COMMENTS )
             .enable( JsonReadFeature.ALLOW_SINGLE_QUOTES )
@@ -32,13 +31,10 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
             .enable( JsonReadFeature.ALLOW_TRAILING_COMMA )
             .build();
 
-    private static BiFunction<String, Map<String,Object>, String> expander;
-    private static BiFunction<String, Map<String,Object>, Object> evaluator;
-
     static {
-        JstlTemplateManager jstl = new JstlTemplateManager();
-        AbstractModelItem.expander = jstl::expandText;
-        AbstractModelItem.evaluator = jstl::eval;
+        JSON_MAPPER.registerModule( new JavaTimeModule() );
+        JSON_MAPPER.setSerializationInclusion( JsonInclude.Include.NON_NULL );
+        JSON_MAPPER.setSerializationInclusion( JsonInclude.Include.NON_EMPTY );
     }
 
     private String name;
@@ -83,7 +79,7 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
     public Model newItemFromJson( String jsonText) {
         try
         {
-            return jsonMapper.readValue( jsonText, getModelClass());
+            return JSON_MAPPER.readValue( jsonText, getModelClass());
         }
         catch ( JsonProcessingException e )
         {
@@ -186,50 +182,12 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
         }
     }
 
-
-    /**
-     * Expands a value using the expander
-     * or else just returns the value.
-     *
-     * @param value the value to be expanded
-     * @return the expanded value
-     */
-    @Override
-    public String expand( String value )
-    {
-        MapBindings bindings = new MapBindings(this);
-        bindings.put( "$self", getSelf() );
-        bindings.put( "$parent", getParent() );
-        return Optional
-            .ofNullable(expander)
-            .map(exp -> exp.apply( value, bindings ) )
-            .orElse( value );
-    }
-    /**
-     * Evaluates a value using the evaluator
-     * or else just returns the value.
-     *
-     * @param value the value to be evaluated
-     * @return the evaluated value
-     */
-    @Override
-    public Object eval( String value )
-    {
-        MapBindings bindings = new MapBindings(this);
-        bindings.put( "$self", getSelf() );
-        bindings.put( "$parent", getParent() );
-        return Optional
-                .ofNullable(evaluator)
-                .map(exp -> exp.apply( value, bindings ) )
-                .orElse( value );
-    }
-
     @Override
     public String  toJson()
     {
         try
         {
-            return jsonMapper
+            return JSON_MAPPER
                     .writerWithDefaultPrettyPrinter()
                     .writeValueAsString( this );
         }

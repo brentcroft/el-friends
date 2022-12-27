@@ -5,7 +5,7 @@
 
 	<groupId>com.brentcroft.tools</groupId>
 	<artifactId>el-friends</artifactId>
-	<version>01.01.08</version>
+	<version>01.01.09</version>
 
 	<name>Brentcroft EL/JSTL Support</name>
 
@@ -59,14 +59,20 @@
 			<version>${jackson.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>com.brentcroft.tools</groupId>
-			<artifactId>el-plates</artifactId>
-			<version>01.02.03</version>
+			<groupId>com.fasterxml.jackson.datatype</groupId>
+			<artifactId>jackson-datatype-jsr310</artifactId>
+			<version>${jackson.version}</version>
 		</dependency>
 
 		<!--
 			TEST ONLY
 		-->
+		<dependency>
+			<groupId>com.brentcroft.tools</groupId>
+			<artifactId>el-plates</artifactId>
+			<version>01.02.03</version>
+			<scope>test</scope>
+		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>

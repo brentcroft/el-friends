@@ -1,8 +1,5 @@
 package com.brentcroft.tools.model;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
-import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.Optional;
 
@@ -11,9 +8,12 @@ import static java.util.Objects.nonNull;
 
 public interface Model extends Map< String, Object >
 {
-    String expand( String value );
-
     Object eval( String value );
+
+    default String expand( String value )
+    {
+        return value;
+    }
 
     String toJson();
 
@@ -45,7 +45,7 @@ public interface Model extends Map< String, Object >
                     .getDeclaredConstructor()
                     .newInstance();
         }
-        catch ( InstantiationException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e )
+        catch ( Exception e )
         {
             throw new IllegalArgumentException( "Failed to create new item.", e );
         }

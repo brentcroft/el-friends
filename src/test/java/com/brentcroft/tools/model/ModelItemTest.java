@@ -1,8 +1,7 @@
 package com.brentcroft.tools.model;
 
-import org.junit.Before;
 import org.junit.Test;
-import com.brentcroft.tools.jstl.JstlTemplateManager;
+
 import static org.junit.Assert.assertEquals;
 
 public class ModelItemTest
