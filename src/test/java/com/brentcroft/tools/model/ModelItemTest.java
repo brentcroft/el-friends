@@ -35,6 +35,8 @@ public class ModelItemTest
 
         assertEquals("plastic", item.eval( "days.wednesday.rubbish[2]" ));
         assertEquals(105, item.eval( "days.wednesday.rubbish[4]" ));
+        assertEquals(105, item.eval( "days.friday.getParent().wednesday.rubbish[4]" ));
+
 
         System.out.println(item.toJson());
     }
@@ -42,7 +44,7 @@ public class ModelItemTest
     @Test
     public void overwritesModelItemFromPropertiesFile() {
         Model item = new ModelItem().appendFromJson( "{ '$json': 'src/test/resources/sub01/root-02.json' }" );
-        assertEquals("boot", item.get( "foot" ));
+        assertEquals("boot", item.getItem( "less" ).get("foot"));
     }
 
     @Test

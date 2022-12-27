@@ -1,5 +1,6 @@
 {
   "andy": "capp",
   "fred": "bloggs",
-  "$properties": "root-02.properties"
+  "less": { "$properties": "sub02/root-02.properties" },
+  "more": {   "$properties": "sub03/root-03.properties" }
 }

@@ -31,19 +31,19 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
             .enable( JsonReadFeature.ALLOW_TRAILING_COMMA )
             .build();
 
-    private static BiFunction<String, Model, String> expander = ( value, context) -> value;
-    private static BiFunction<String, Model, Object> evaluator = ( value, context) -> value;
+    private static BiFunction<String, Map<String,Object>, String> expander = ( value, context) -> value;
+    private static BiFunction<String, Map<String,Object>, Object> evaluator = ( value, context) -> value;
 
-    public static void setExpander( BiFunction<String, Model, String> expander ) {
+    public static void setExpander( BiFunction<String, Map<String,Object>, String> expander ) {
         AbstractModelItem.expander = expander;
     }
-    public static BiFunction<String, Model, String> getExpander() {
+    public static BiFunction<String, Map<String,Object>, String> getExpander() {
         return AbstractModelItem.expander;
     }
-    public static void setEvaluator(BiFunction<String, Model, Object> evaluator) {
+    public static void setEvaluator(BiFunction<String, Map<String,Object>, Object> evaluator) {
         AbstractModelItem.evaluator = evaluator;
     }
-    public static BiFunction<String, Model, Object> getEvaluator() {
+    public static BiFunction<String, Map<String,Object>, Object> getEvaluator() {
         return AbstractModelItem.evaluator;
     }
     public static void setJsonMapper(JsonMapper jsonMapper) {
@@ -105,12 +105,26 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
 
     public void introspectEntries() {
         if (containsKey( "$json" )) {
-            Model item = newChild( this, readFileFully(get("$json").toString()) );
-            putAll( item );
+            Model item = newItem();
+            item.setParent( this );
+            item.appendFromJson( readFileFully(get("$json").toString()) );
+            filteredPutAll( item );
         }
         if (containsKey( "$properties" )) {
             overwritePropertiesFromFile(get("$properties").toString());
         }
+    }
+
+    public void putAll( Map< ? extends String, ? > item) {
+        super.putAll( item
+                .entrySet()
+                .stream()
+                .peek( entry -> {
+                    if ( entry.getValue() instanceof Model ) {
+                        (( Model )entry.getValue()).setParent( this );
+                    }
+                } )
+                .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) ));
     }
 
     public void filteredPutAll( Map< ? extends String, ? > item) {
@@ -133,7 +147,7 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
         try (FileInputStream fis = new FileInputStream( file )) {
             p.load( fis );
         } catch (Exception e) {
-            throw new IllegalArgumentException(format( "Properties file not found: %s",propertiesFilePath ), e);
+            throw new IllegalArgumentException(format( "Properties file not found: %s",file ), e);
         }
         Function<String,String> uptoAnyPlaceHolder = value -> {
                 int phi = value.indexOf("{0}");
