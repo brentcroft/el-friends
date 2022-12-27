@@ -51,19 +51,36 @@ public interface Model extends Map< String, Object >
         }
     }
 
+    /**
+     * Constructs a temporary sibling item using the supplied JSON text
+     * and filters the sibling item's entries into this
+     * and then returns this;
+     *
+     * @param jsonText JSON text to construct a new Model
+     * @return this
+     */
     default Model appendFromJson( String jsonText )
     {
-        Model item = newChild( this, jsonText );
+        Model item = newChild( getParent(), jsonText );
         filteredPutAll( item );
         return this;
     }
 
+    /**
+     * Constructs a new child item using the supplied JSON text
+     * assigns to this using the supplied key
+     * and then returns this;
+     *
+     * @param key the child reference
+     * @param jsonText JSON text to construct a new Model
+     * @return this
+     */
     default Model insertFromJson( String key, String jsonText )
     {
         Model item = newChild( this, jsonText );
         item.setName( key );
         put( key, item );
-        return item;
+        return this;
     }
 
     default Model getRoot()
@@ -76,34 +93,23 @@ public interface Model extends Map< String, Object >
                 .orElse( this );
     }
 
-    default Model getItem( String key )
+    /**
+     * Navigate the supplied object path starting from this.
+     *
+     * Uses <code>eval( path )</code> and raises an exceptiono if the result is not a Model
+     *
+     * @param path an object path
+     * @return a Model
+     */
+    default Model getItem( String path )
     {
-        Object node = null;
-        for ( String p : key.split( "\\s*\\.\\s*" ) )
-        {
-            if ( node == null )
-            {
-                node = get( p );
-            }
-            else if ( node instanceof Map )
-            {
-                node = ( ( Map< ?, ? > ) node ).get( p );
-            }
-            else if ( node instanceof ObjectNode )
-            {
-                node = ( ( ObjectNode ) node ).get( p );
-            }
-            else
-            {
-                throw new IllegalArgumentException( format( "Unknown type: '%s' at step '%s' in path '%s'", node, p, key ) );
-            }
-        }
+        Object node = eval( path );
         if ( node instanceof Model )
         {
             return ( Model ) node;
         }
         throw new IllegalArgumentException( format( "Object at path '%s' is not a Model: '%s'",
-                key,
+                path,
                 Optional
                         .ofNullable( node )
                         .map( Object::getClass )

@@ -1,5 +1,7 @@
 package com.brentcroft.tools.model;
 
+import com.brentcroft.tools.jstl.JstlTemplateManager;
+import com.brentcroft.tools.jstl.MapBindings;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
@@ -9,7 +11,6 @@ import lombok.Setter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.function.BiFunction;
@@ -31,26 +32,13 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
             .enable( JsonReadFeature.ALLOW_TRAILING_COMMA )
             .build();
 
-    private static BiFunction<String, Map<String,Object>, String> expander = ( value, context) -> value;
-    private static BiFunction<String, Map<String,Object>, Object> evaluator = ( value, context) -> value;
+    private static BiFunction<String, Map<String,Object>, String> expander;
+    private static BiFunction<String, Map<String,Object>, Object> evaluator;
 
-    public static void setExpander( BiFunction<String, Map<String,Object>, String> expander ) {
-        AbstractModelItem.expander = expander;
-    }
-    public static BiFunction<String, Map<String,Object>, String> getExpander() {
-        return AbstractModelItem.expander;
-    }
-    public static void setEvaluator(BiFunction<String, Map<String,Object>, Object> evaluator) {
-        AbstractModelItem.evaluator = evaluator;
-    }
-    public static BiFunction<String, Map<String,Object>, Object> getEvaluator() {
-        return AbstractModelItem.evaluator;
-    }
-    public static void setJsonMapper(JsonMapper jsonMapper) {
-        AbstractModelItem.jsonMapper = jsonMapper;
-    }
-    public static JsonMapper getJsonMapper() {
-        return AbstractModelItem.jsonMapper;
+    static {
+        JstlTemplateManager jstl = new JstlTemplateManager();
+        AbstractModelItem.expander = jstl::expandText;
+        AbstractModelItem.evaluator = jstl::eval;
     }
 
     private String name;
@@ -209,9 +197,11 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
     @Override
     public String expand( String value )
     {
+        MapBindings bindings = new MapBindings(this);
+        bindings.put( "self", this );
         return Optional
             .ofNullable(expander)
-            .map(exp -> exp.apply( value, this ) )
+            .map(exp -> exp.apply( value, bindings ) )
             .orElse( value );
     }
     /**
@@ -224,9 +214,12 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
     @Override
     public Object eval( String value )
     {
+        MapBindings bindings = new MapBindings(this);
+        bindings.put( "$self", getSelf() );
+        bindings.put( "$parent", getParent() );
         return Optional
                 .ofNullable(evaluator)
-                .map(exp -> exp.apply( value, this ) )
+                .map(exp -> exp.apply( value, bindings ) )
                 .orElse( value );
     }
 
