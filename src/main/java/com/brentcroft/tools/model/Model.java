@@ -139,10 +139,6 @@ public interface Model extends Map< String, Object >
     @SuppressWarnings( "unchecked" )
     default void transformMapsToItems( Map< String, Object > item )
     {
-        if ( item instanceof Model )
-        {
-            ( ( Model ) item ).introspectEntries();
-        }
         for ( String key : item.keySet() )
         {
             Object value = item.get( key );
@@ -164,6 +160,10 @@ public interface Model extends Map< String, Object >
                     item.put( key, childItem );
                 }
             }
+        }
+        if ( item instanceof Model )
+        {
+            ( ( Model ) item ).introspectEntries();
         }
     }
 }
