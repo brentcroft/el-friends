@@ -1,5 +1,6 @@
 package com.brentcroft.tools.model;
 
+import java.io.File;
 import java.util.Map;
 import java.util.Optional;
 
@@ -33,7 +34,7 @@ public interface Model extends Map< String, Object >
 
     void introspectEntries();
 
-    String readFileFully( String filePath );
+    File getLocalFile(String filePath);
 
     void filteredPutAll( Map< ? extends String, ? > item );
 
@@ -61,7 +62,7 @@ public interface Model extends Map< String, Object >
      */
     default Model appendFromJson( String jsonText )
     {
-        Model item = newChild( getParent(), jsonText );
+        Model item = newChild( this, jsonText );
         filteredPutAll( item );
         return this;
     }
@@ -96,7 +97,7 @@ public interface Model extends Map< String, Object >
     /**
      * Navigate the supplied object path starting from this.
      *
-     * Uses <code>eval( path )</code> and raises an exceptiono if the result is not a Model
+     * Uses <code>eval( path )</code> and raises an exception if the result is not a Model
      *
      * @param path an object path
      * @return a Model
@@ -132,12 +133,12 @@ public interface Model extends Map< String, Object >
     {
         Model item = newItemFromJson( jsonText );
         item.setParent( parent );
-        transformMapsToItems( item );
+        transformMapsToModels( item );
         return item;
     }
 
     @SuppressWarnings( "unchecked" )
-    default void transformMapsToItems( Map< String, Object > item )
+    default void transformMapsToModels( Map< String, Object > item )
     {
         for ( String key : item.keySet() )
         {
@@ -156,7 +157,7 @@ public interface Model extends Map< String, Object >
                     childItem.setName( key );
                     childItem.setParent( item );
                     childItem.putAll( ( Map< String, Object > ) value );
-                    transformMapsToItems( childItem );
+                    transformMapsToModels( childItem );
                     item.put( key, childItem );
                 }
             }

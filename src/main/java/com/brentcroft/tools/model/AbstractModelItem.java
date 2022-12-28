@@ -37,6 +37,20 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
         JSON_MAPPER.setSerializationInclusion( JsonInclude.Include.NON_EMPTY );
     }
 
+    protected static String readFileFully( File file )
+    {
+        try
+        {
+            return String
+                    .join( "\n", Files
+                            .readAllLines( file.toPath() ) );
+        }
+        catch ( IOException e )
+        {
+            throw new IllegalArgumentException(format("Invalid file: %s", file), e);
+        }
+    }
+
     private String name;
     private Map<String, Object> parent;
 
@@ -60,7 +74,7 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
         return super.put(key, value);
     }
 
-    private File getCurrentDirectory()
+    protected File getCurrentDirectory()
     {
         return Optional
                 .ofNullable( (String)get("$currentDirectory") )
@@ -68,11 +82,17 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
                 .orElse( null );
     }
 
-    private void setCurrentDirectory( File file )
+    private void setCurrentDirectory( File directory )
     {
+        if (!directory.exists()) {
+            throw new IllegalArgumentException(format("Directory does not exist: %s", directory.getPath()));
+        }
+        if (!directory.isDirectory()) {
+            throw new IllegalArgumentException(format("Not a directory: %s", directory.getPath()));
+        }
         File cd = getCurrentDirectory();
-        if ( cd == null || !cd.equals( file ) ) {
-            put("$currentDirectory", file.getPath());
+        if ( cd == null || !cd.equals( directory ) ) {
+            put("$currentDirectory", directory.getPath());
         }
     }
 
@@ -91,12 +111,27 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
         if (containsKey( "$json" )) {
             Model item = newItem();
             item.setParent( this );
-            item.appendFromJson( readFileFully(get("$json").toString()) );
+            File file = getLocalFile(get("$json").toString());
+            setCurrentDirectory( file.getParentFile() );
+            item.appendFromJson( AbstractModelItem.readFileFully(file) );
             filteredPutAll( item );
         }
         if (containsKey( "$properties" )) {
             overwritePropertiesFromFile(get("$properties").toString());
         }
+    }
+
+    public File getLocalFile(String filePath) {
+        return Optional
+                .of( new File(filePath) )
+                .filter( File::exists )
+                .orElseGet( () -> {
+                    File cd = getCurrentDirectory();
+                    return Optional
+                            .of( new File(cd, filePath) )
+                            .filter( File::exists )
+                            .orElseThrow(() -> new IllegalArgumentException(format("Local file does not exist: %s/%s", cd, filePath)))   ;
+                });
     }
 
     public void putAll( Map< ? extends String, ? > item) {
@@ -158,28 +193,6 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
                 target.put( key, value );
             }
         } );
-    }
-
-    public String readFileFully( String filePath )
-    {
-        File file = new File(filePath);
-        if (!file.exists()) {
-            file = new File( getCurrentDirectory(), filePath );
-        }
-        if (!file.exists()) {
-            throw new IllegalArgumentException(format("File does not exist: %s", file));
-        }
-        setCurrentDirectory(file.getParentFile());
-        try
-        {
-            return String
-                    .join( "\n", Files
-                    .readAllLines( file.toPath() ) );
-        }
-        catch ( IOException e )
-        {
-           throw new IllegalArgumentException(format("Invalid file path: %s", filePath), e);
-        }
     }
 
     @Override

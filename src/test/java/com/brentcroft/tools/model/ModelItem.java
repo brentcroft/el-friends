@@ -34,12 +34,9 @@ public class ModelItem extends AbstractModelItem
     @Override
     public String expand( String value )
     {
-        MapBindings bindings = new MapBindings(this);
-        bindings.put( "$self", getSelf() );
-        bindings.put( "$parent", getParent() );
         return Optional
                 .ofNullable(expander)
-                .map(exp -> exp.apply( value, bindings ) )
+                .map(exp -> exp.apply( value, newContainer() ) )
                 .orElse( value );
     }
     /**
@@ -52,12 +49,16 @@ public class ModelItem extends AbstractModelItem
     @Override
     public Object eval( String value )
     {
+        return Optional
+                .ofNullable(evaluator)
+                .map(exp -> exp.apply( value, newContainer() ) )
+                .orElse( value );
+    }
+
+    private Map<String, Object> newContainer() {
         MapBindings bindings = new MapBindings(this);
         bindings.put( "$self", getSelf() );
         bindings.put( "$parent", getParent() );
-        return Optional
-                .ofNullable(evaluator)
-                .map(exp -> exp.apply( value, bindings ) )
-                .orElse( value );
+        return bindings;
     }
 }

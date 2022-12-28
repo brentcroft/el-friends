@@ -12,6 +12,12 @@ public class ModelItemTest
         assertEquals("bloggs", item.get( "fred" ));
     }
 
+    @Test
+    public void calculatesPath() {
+        Model item = new ModelItem()
+                .appendFromJson( "{ 'people': { 'red': { 'hue': 123456 }, 'green': { 'hue': { 'x': 777 } }, 'blue': { 'hue': 345612 } } }" );
+        assertEquals("people.green.hue", item.getItem( "people.green.hue" ).path());
+    }
 
     @Test
     public void assignsToSelf() {
