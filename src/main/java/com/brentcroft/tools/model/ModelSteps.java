@@ -12,17 +12,24 @@ public class ModelSteps implements Runnable
 {
     private final String steps;
     private final Model model;
+    private final boolean inline;
 
     private static final ThreadLocal<Stack<Model>> stack = ThreadLocal.withInitial( Stack::new );
 
     public ModelSteps( Model model )
     {
         this.model = model;
-
         this.steps = Optional
                 .ofNullable(model.get("$steps"))
                 .map(Object::toString)
                 .orElseThrow(() -> new IllegalArgumentException(format("Item [%s] has no value for $steps", model.path())));
+        this.inline = false;
+    }
+
+    public ModelSteps( Model model, String steps ) {
+        this.model = model;
+        this.steps = steps;
+        this.inline = true;
     }
 
     private Stack<Model> stack() {
@@ -38,7 +45,11 @@ public class ModelSteps implements Runnable
                     .mapToObj( i -> "  " )
                     .collect( Collectors.joining());
 
-            model.logStep( format("%s$steps: %s", indent, model.path()) );
+            model.logStep(
+                    inline
+                    ? format("%s%s: (inline)", indent, model.path())
+                    : format("%s%s.$steps", indent, model.path() )
+                     );
 
             String expandedSteps = model.expand( steps );
             Stream

@@ -18,19 +18,25 @@ public class ModelItemTest
     public void calculatesPath() {
         Model item = new ModelItem()
                 .appendFromJson( "{ 'people': { 'red': { 'hue': 123456 }, 'green': { 'hue': { 'x': 777 } }, 'blue': { 'hue': 345612 } } }" );
-        assertEquals("?.people.green.hue", item.getItem( "people.green.hue" ).path());
+        assertEquals("people.green.hue", item.getItem( "people.green.hue" ).path());
         item.setName("root");
-        assertEquals("root.people.green.hue", item.getItem( "people.green.hue" ).path());
+        assertEquals("people.green.hue", item.getItem( "people.green.hue" ).path());
     }
 
     @Test
-    public void assignsToSelf() {
+    public void evaluatesRoot() {
+        Model item = new ModelItem()
+                .appendFromJson( "{ 'people': { 'red': { 'hue': 123456 }, 'green': { 'hue': { 'x': 777 } }, 'blue': { 'hue': 345612 } } }" );
+        assertEquals(item, item.getItem( "people.green.hue" ).getRoot());
+    }
+
+    @Test
+    public void evaluatesSelf() {
         Model item = new ModelItem();
-        item.eval( "$self" );
         assertEquals(item, item.eval( "$self" ));
     }
     @Test
-    public void assignsToSelf02() {
+    public void assignsToSelf() {
         Model item = new ModelItem()
                 .appendFromJson( "{ 'fred': 'bloggs' }" )
                 .appendFromJson( "{ 'surname': 'bloggs' }" );
@@ -39,13 +45,13 @@ public class ModelItemTest
     }
 
     @Test
-    public void assignsToParent01() {
+    public void evaluatesParent() {
         Model item = new ModelItem().insertFromJson( "someChild", "{}" );
         assertEquals(item, item.getItem( "someChild" ).eval( "$parent" ));
     }
 
     @Test
-    public void assignsToParent02() {
+    public void assignsToParent() {
         Model item = new ModelItem()
                 .appendFromJson( "{ 'fred': 'bloggs', 'xyz': { 'surname': 'bloggs' } }" );
         item.getItem( "xyz" ).eval( "$parent.blue = 'green'" );
@@ -132,6 +138,25 @@ public class ModelItemTest
         item.getItem( "incrementer" ).run();
 
         assertEquals(4L, item.get( "level" ));
+    }
+
+    @Test
+    public void usesModelStepsInline() {
+        Model item = new ModelItem()
+                .appendFromJson( "{ '$json': 'src/test/resources/nested-01.json' }" )
+                .insertFromJson( "incrementer","{ '$steps': '$parent.level = level + 1' }" );
+
+        item.setName( "root" );
+        assertEquals(3, item.get( "level" ));
+
+        item.steps( "$self.level = level + 1; $self.level = level + 1; $self.level = level + 1; " );
+        assertEquals(6L, item.get( "level" ));
+
+        item.getItem( "incrementer" ).run();
+        assertEquals(7L, item.get( "level" ));
+
+        item.steps( "incrementer.run(); incrementer.run(); incrementer.run(); " );
+        assertEquals(10L, item.get( "level" ));
     }
 
 }

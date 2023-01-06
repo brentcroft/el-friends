@@ -22,7 +22,11 @@ public interface Model extends Map< String, Object >
     }
 
     default void run() {
-        new ModelSteps(getSelf()).run();
+        new ModelSteps(this).run();
+    }
+
+    default void steps(String steps) {
+        new ModelSteps(this, steps).run();
     }
 
     String toJson();
@@ -129,13 +133,13 @@ public interface Model extends Map< String, Object >
 
     default String path()
     {
+        // root does not appear in any path
         return Optional
                 .ofNullable( getParent() )
                 .filter( p -> p instanceof Model )
                 .map( p -> ( Model ) p )
-                //.filter( p -> nonNull( p.getParent() ) )
-                .map( p -> p.path() + "." + getName() )
-                .orElse( getName() );
+                .map( p -> ( nonNull( p.getParent() ) ? format("%s.%s", p.path(), getName()) : getName())  )
+                .orElse( "" );
     }
 
     default Model newChild( Map< String, Object > parent, String jsonText )
