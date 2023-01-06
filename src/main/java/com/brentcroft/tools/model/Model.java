@@ -3,17 +3,26 @@ package com.brentcroft.tools.model;
 import java.io.File;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import static java.lang.String.format;
 import static java.util.Objects.nonNull;
 
 public interface Model extends Map< String, Object >
 {
+    default void logStep( String step ) {
+        System.out.println( "-> " + step );
+    }
+
     Object eval( String value );
 
     default String expand( String value )
     {
         return value;
+    }
+
+    default void run() {
+        new ModelSteps(getSelf()).run();
     }
 
     String toJson();
@@ -166,5 +175,28 @@ public interface Model extends Map< String, Object >
         {
             ( ( Model ) item ).introspectEntries();
         }
+    }
+
+    default Model whileDo( String booleanTest, String operation, int maxTries ) {
+        int tries = 0;
+        Supplier<Boolean> whileTest = () ->  {
+            try {
+                return (Boolean)eval( booleanTest );
+            } catch (Exception e) {
+                return false;
+            }
+        };
+        while (whileTest.get() && tries < maxTries) {
+            tries++;
+            try {
+                eval( operation );
+            } catch (Exception ignored) {
+
+            }
+        }
+        if ( whileTest.get() ) {
+            throw new IllegalArgumentException(format("Ran out of tries (%s) but: %s", tries, booleanTest ));
+        }
+        return this;
     }
 }

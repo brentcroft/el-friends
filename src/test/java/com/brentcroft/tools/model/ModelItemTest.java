@@ -2,6 +2,8 @@ package com.brentcroft.tools.model;
 
 import org.junit.Test;
 
+import java.util.Collections;
+
 import static org.junit.Assert.assertEquals;
 
 public class ModelItemTest
@@ -103,4 +105,32 @@ public class ModelItemTest
         assertEquals(expected, item.eval( "inserted.fred" ) );
         assertEquals(expected, item.eval( "inserted['fred']" ) );
     }
+
+
+    @Test
+    public void usesWhileDo() {
+        Model item = new ModelItem()
+                .appendFromJson( "{ digits: [ 'a', 'b', 'c', '3', '5', '6', '7', '8', '9' ] }" );
+
+        Object actual = item
+                .whileDo( "digits.size() > 0", "digits.remove( digits[0] )", 12 )
+                .eval( "digits" );
+
+        assertEquals( Collections.emptyList(), actual );
+    }
+
+
+    @Test
+    public void usesModelSteps() {
+        Model item = new ModelItem()
+                .appendFromJson( "{ '$json': 'src/test/resources/nested-01.json' }" )
+                .insertFromJson( "incrementer","{ '$steps': '$parent.level = level + 1' }" );
+
+        assertEquals(3, item.get( "level" ));
+
+        item.getItem( "incrementer" ).run();
+
+        assertEquals(4L, item.get( "level" ));
+    }
+
 }

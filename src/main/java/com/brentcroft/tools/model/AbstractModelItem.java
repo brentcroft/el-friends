@@ -210,6 +210,7 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
         }
     }
 
+    @Override
     public String toString() {
         return path();
     }
