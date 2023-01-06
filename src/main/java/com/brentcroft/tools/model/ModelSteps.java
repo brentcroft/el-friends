@@ -45,10 +45,13 @@ public class ModelSteps implements Runnable
                     .mapToObj( i -> "  " )
                     .collect( Collectors.joining());
 
+            String modelPath = model.path();
+
+
             model.logStep(
                     inline
-                    ? format("%s%s: (inline)", indent, model.path())
-                    : format("%s%s.$steps", indent, model.path() )
+                    ? format("%s%s(inline)", indent, modelPath.isEmpty() ? "" : (modelPath + ":"))
+                    : format("%s%s$steps", indent, modelPath.isEmpty() ? "" : (modelPath + ".") )
                      );
 
             String expandedSteps = model.expand( steps );
