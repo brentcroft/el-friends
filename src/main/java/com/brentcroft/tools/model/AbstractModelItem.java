@@ -51,7 +51,7 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
         }
     }
 
-    private String name;
+    private String name = "?";
     private Map<String, Object> parent;
 
     public Object get(Object key) {

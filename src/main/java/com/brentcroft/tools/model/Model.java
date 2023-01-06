@@ -10,8 +10,8 @@ import static java.util.Objects.nonNull;
 
 public interface Model extends Map< String, Object >
 {
-    default void logStep( String step ) {
-        System.out.println( "-> " + step );
+    default void logStep( String text ) {
+        System.out.println( text );
     }
 
     Object eval( String value );
@@ -133,7 +133,7 @@ public interface Model extends Map< String, Object >
                 .ofNullable( getParent() )
                 .filter( p -> p instanceof Model )
                 .map( p -> ( Model ) p )
-                .filter( p -> nonNull( p.getParent() ) )
+                //.filter( p -> nonNull( p.getParent() ) )
                 .map( p -> p.path() + "." + getName() )
                 .orElse( getName() );
     }

@@ -1,6 +1,9 @@
 package com.brentcroft.tools.model;
 
 import java.util.Optional;
+import java.util.Stack;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.lang.String.format;
@@ -9,6 +12,8 @@ public class ModelSteps implements Runnable
 {
     private final String steps;
     private final Model model;
+
+    private static final ThreadLocal<Stack<Model>> stack = ThreadLocal.withInitial( Stack::new );
 
     public ModelSteps( Model model )
     {
@@ -20,14 +25,30 @@ public class ModelSteps implements Runnable
                 .orElseThrow(() -> new IllegalArgumentException(format("Item [%s] has no value for $steps", model.path())));
     }
 
+    private Stack<Model> stack() {
+        return stack.get();
+    }
+
     public void run()
     {
-        String expandedSteps = model.expand( steps );
-        Stream
-                .of(expandedSteps.split( "\\s*[;\\n\\r]+\\s*" ))
-                .map( String::trim )
-                .filter( step -> !step.isEmpty() && !step.startsWith( "#" ) )
-                .peek( model::logStep )
-                .forEach( model::eval );
+        stack().push( model );
+        try {
+            String indent = IntStream
+                    .range(0, stack().size() )
+                    .mapToObj( i -> "  " )
+                    .collect( Collectors.joining());
+
+            model.logStep( format("%s$steps: %s", indent, model.path()) );
+
+            String expandedSteps = model.expand( steps );
+            Stream
+                    .of(expandedSteps.split( "\\s*[;\\n\\r]+\\s*" ))
+                    .map( String::trim )
+                    .filter( step -> !step.isEmpty() && !step.startsWith( "#" ) )
+                    .peek( step -> model.logStep(format("%s -> %s", indent, step)) )
+                    .forEach( model::eval );
+        } finally {
+            stack().pop();
+        }
     }
 }

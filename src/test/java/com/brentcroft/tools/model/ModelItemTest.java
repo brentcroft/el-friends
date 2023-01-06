@@ -18,7 +18,9 @@ public class ModelItemTest
     public void calculatesPath() {
         Model item = new ModelItem()
                 .appendFromJson( "{ 'people': { 'red': { 'hue': 123456 }, 'green': { 'hue': { 'x': 777 } }, 'blue': { 'hue': 345612 } } }" );
-        assertEquals("people.green.hue", item.getItem( "people.green.hue" ).path());
+        assertEquals("?.people.green.hue", item.getItem( "people.green.hue" ).path());
+        item.setName("root");
+        assertEquals("root.people.green.hue", item.getItem( "people.green.hue" ).path());
     }
 
     @Test
@@ -66,9 +68,6 @@ public class ModelItemTest
         assertEquals("plastic", item.eval( "days.wednesday.rubbish[2]" ));
         assertEquals(105, item.eval( "days.wednesday.rubbish[4]" ));
         assertEquals(105, item.eval( "days.friday.getParent().wednesday.rubbish[4]" ));
-
-
-        System.out.println(item.toJson());
     }
 
     @Test
@@ -125,6 +124,8 @@ public class ModelItemTest
         Model item = new ModelItem()
                 .appendFromJson( "{ '$json': 'src/test/resources/nested-01.json' }" )
                 .insertFromJson( "incrementer","{ '$steps': '$parent.level = level + 1' }" );
+
+        item.setName( "root" );
 
         assertEquals(3, item.get( "level" ));
 
