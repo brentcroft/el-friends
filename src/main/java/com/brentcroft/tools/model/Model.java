@@ -1,9 +1,12 @@
 package com.brentcroft.tools.model;
 
+import org.xml.sax.InputSource;
+
 import java.io.File;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import static java.lang.String.format;
 import static java.util.Objects.nonNull;
@@ -25,6 +28,13 @@ public interface Model extends Map< String, Object >
         new ModelSteps(this).run();
     }
 
+    static Stream<String> stepsStream(String value) {
+        return Stream
+                .of(value.split( "\\s*[;\\n\\r]+\\s*" ))
+                .map( String::trim )
+                .filter( v -> !v.isEmpty() && !v.startsWith( "#" ) );
+    }
+
     default void steps(String steps) {
         new ModelSteps(this, steps).run();
     }
@@ -44,6 +54,7 @@ public interface Model extends Map< String, Object >
     Class< ? extends Model > getModelClass();
 
     Model newItemFromJson( String jsonText );
+    Model newItemFromXml( InputSource inputSource );
 
     void introspectEntries();
 
@@ -131,6 +142,15 @@ public interface Model extends Map< String, Object >
                         .orElse( null ) ) );
     }
 
+    /**
+     * The object path to this item relative to the root item,
+     * being the concatenation of the names of the ancestors
+     * and this item separated by periods.
+     *
+     * The root item is not included in any path.
+     *
+     * @return the object path to this Model item
+     */
     default String path()
     {
         // root does not appear in any path

@@ -1,5 +1,6 @@
 package com.brentcroft.tools.model;
 
+import com.brentcroft.tools.materializer.Materializer;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.json.JsonReadFeature;
@@ -7,9 +8,11 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.Getter;
 import lombok.Setter;
+import org.xml.sax.InputSource;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.*;
@@ -22,6 +25,10 @@ import static java.lang.String.format;
 @Setter
 public abstract class AbstractModelItem extends LinkedHashMap<String,Object> implements Model
 {
+    protected static Materializer< Properties > PROPERTIES_XML_MATERIALIZER = new Materializer<>(
+            () -> PropertiesRootTag.ROOT,
+            Properties::new );
+
     protected static JsonMapper JSON_MAPPER = JsonMapper
             .builder()
             .enable( JsonReadFeature.ALLOW_JAVA_COMMENTS )
@@ -109,16 +116,40 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
 
     public void introspectEntries() {
         if (containsKey( "$json" )) {
-            Model item = newItem();
-            item.setParent( this );
             File file = getLocalFile(get("$json").toString());
             setCurrentDirectory( file.getParentFile() );
-            item.appendFromJson( AbstractModelItem.readFileFully(file) );
-            filteredPutAll( item );
+            appendFromJson( AbstractModelItem.readFileFully(file) );
+        }
+        if (containsKey( "$xml" )) {
+            File file = getLocalFile(get("$xml").toString());
+            setCurrentDirectory( file.getParentFile() );
+            try
+            {
+                newItemFromXml( new InputSource(new FileInputStream( file ) ) );
+            }
+            catch ( FileNotFoundException e )
+            {
+                throw new RuntimeException(e);
+            }
+//            materializeFromXmlFile(get("$xml").toString());
         }
         if (containsKey( "$properties" )) {
-            overwritePropertiesFromFile(get("$properties").toString());
+            overwritePropertiesFromFile(get("$properties").toString(), false);
         }
+        if (containsKey( "$properties-xml" )) {
+            overwritePropertiesFromFile(get("$properties-xml").toString(), true);
+        }
+    }
+
+    public Model newItemFromXml( InputSource inputSource ) {
+        Model item = newItem();
+        item.setParent( this );
+        Materializer< Model > materializer = new Materializer<>(
+                () -> ModelRootTag.DOCUMENT_ROOT,
+                () -> item );
+        materializer.apply( inputSource );
+        filteredPutAll( item );
+        return item;
     }
 
     public File getLocalFile(String filePath) {
@@ -156,15 +187,21 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
     }
 
     @SuppressWarnings( "unchecked" )
-    private void overwritePropertiesFromFile( String propertiesFilePath )
+    private void overwritePropertiesFromFile( String propertiesFilePath, boolean isXml )
     {
         File file = new File(propertiesFilePath);
         if (!file.exists()) {
             file = new File( getCurrentDirectory(), propertiesFilePath );
         }
-        final Properties p = new Properties();
+
+        Properties p;
         try (FileInputStream fis = new FileInputStream( file )) {
-            p.load( fis );
+            if (isXml) {
+                p = PROPERTIES_XML_MATERIALIZER.apply(new InputSource(fis));
+            } else {
+                p = new Properties();
+                p.load( fis );
+            }
         } catch (Exception e) {
             throw new IllegalArgumentException(format( "Properties file not found: %s",file ), e);
         }

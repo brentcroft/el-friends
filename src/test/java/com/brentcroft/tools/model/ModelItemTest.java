@@ -1,13 +1,25 @@
 package com.brentcroft.tools.model;
 
+import com.brentcroft.tools.materializer.Materializer;
 import org.junit.Test;
+import org.xml.sax.InputSource;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.util.Collections;
+import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
 
 public class ModelItemTest
 {
+    @Test
+    public void createsEmptyModelItemFromJson() {
+        Model item = new ModelItem().appendFromJson( "{}" );
+        assertEquals("{}", item.toJson().replaceAll( " ", "" ));
+    }
+
     @Test
     public void createsModelItemFromJson() {
         Model item = new ModelItem().appendFromJson( "{ 'fred': 'bloggs' }" );
@@ -80,6 +92,44 @@ public class ModelItemTest
     public void overwritesModelItemFromPropertiesFile() {
         Model item = new ModelItem().appendFromJson( "{ '$json': 'src/test/resources/sub01/root-02.json' }" );
         assertEquals("boot", item.getItem( "less" ).get("foot"));
+    }
+
+    @Test
+    public void overwritesModelItemFromPropertiesXmlFile() {
+        Model item = new ModelItem().appendFromJson( "{ '$properties-xml': 'src/test/resources/properties.xml' }" );
+        assertEquals("234", item.get( "amount" ));
+    }
+
+
+    @Test
+    public void materializesModelItemFromXmlFileReference()
+    {
+        Model item = new ModelItem().appendFromJson( "{ '$xml': 'src/test/resources/brentcroft-site.xml' }" );
+
+        System.out.println(item.toJson());
+
+        assertEquals("234", item.get( "amount" ));
+        assertEquals("0.15", item.getItem( "totals" ).get( "amount" ));
+    }
+
+    @Test
+    public void materializesModelItem() throws FileNotFoundException
+    {
+        // must set current directory if XML loaded as stream
+        Materializer< ModelItem > materializer = new Materializer<>(
+                () -> ModelRootTag.DOCUMENT_ROOT,
+                () -> {
+                    ModelItem item = new ModelItem();
+                    item.put("$currentDirectory", "src/test/resources/");
+                    return item;
+                } );
+
+        Model item = materializer
+                .apply(
+                        new InputSource(
+                                new FileInputStream( "src/test/resources/brentcroft-site.xml" ) ) );
+        assertEquals("234", item.get( "amount" ));
+        assertEquals("0.15", item.getItem( "totals" ).get( "amount" ));
     }
 
     @Test

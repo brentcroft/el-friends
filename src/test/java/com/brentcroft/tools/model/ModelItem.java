@@ -49,10 +49,15 @@ public class ModelItem extends AbstractModelItem
     @Override
     public Object eval( String value )
     {
-        return Optional
-                .ofNullable(evaluator)
-                .map(exp -> exp.apply( value, newContainer() ) )
-                .orElse( value );
+        if (evaluator == null) {
+            return null;
+        }
+        Map<String, Object> bindings = newContainer();
+        Object[] lastResult = {null};
+        Model
+                .stepsStream( value )
+                .forEach( step -> lastResult[0] = evaluator.apply( step, bindings ) );
+        return lastResult[0];
     }
 
     private Map<String, Object> newContainer() {

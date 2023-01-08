@@ -47,18 +47,14 @@ public class ModelSteps implements Runnable
 
             String modelPath = model.path();
 
-
             model.logStep(
                     inline
                     ? format("%s%s(inline)", indent, modelPath.isEmpty() ? "" : (modelPath + ":"))
                     : format("%s%s$steps", indent, modelPath.isEmpty() ? "" : (modelPath + ".") )
                      );
 
-            String expandedSteps = model.expand( steps );
-            Stream
-                    .of(expandedSteps.split( "\\s*[;\\n\\r]+\\s*" ))
-                    .map( String::trim )
-                    .filter( step -> !step.isEmpty() && !step.startsWith( "#" ) )
+            Model
+                    .stepsStream( model.expand( steps ) )
                     .peek( step -> model.logStep(format("%s -> %s", indent, step)) )
                     .forEach( model::eval );
         } finally {
