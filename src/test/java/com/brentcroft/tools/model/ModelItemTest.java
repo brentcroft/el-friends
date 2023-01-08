@@ -1,16 +1,16 @@
 package com.brentcroft.tools.model;
 
-import com.brentcroft.tools.materializer.Materializer;
+import com.brentcroft.tools.materializer.TagValidationException;
 import org.junit.Test;
 import org.xml.sax.InputSource;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Collections;
-import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -121,19 +121,11 @@ public class ModelItemTest
     @Test
     public void materializesModelItem() throws FileNotFoundException
     {
-        // must set current directory if XML loaded as stream
-        Materializer< ModelItem > materializer = new Materializer<>(
-                () -> ModelRootTag.DOCUMENT_ROOT,
-                () -> {
-                    ModelItem item = new ModelItem();
-                    item.put("$currentDirectory", "src/test/resources/");
-                    return item;
-                } );
+        Path path = Paths.get("src/test/resources/brentcroft-site.xml");
+        Model item = new ModelItem();
+        item.setCurrentDirectory( path.getParent() );
+        item.appendFromXml( new InputSource( new FileInputStream( path.toFile() ) ) );
 
-        Model item = materializer
-                .apply(
-                        new InputSource(
-                                new FileInputStream( "src/test/resources/brentcroft-site.xml" ) ) );
         assertEquals(234.0, item.get( "amount" ));
         assertEquals(0.15, item.getItem( "totals" ).get( "amount" ));
     }
@@ -215,4 +207,27 @@ public class ModelItemTest
         assertEquals(10L, item.get( "level" ));
     }
 
+
+    @Test(expected = TagValidationException.class)
+    public void circularityXml()
+    {
+        new ModelItem().appendFromJson( "{ '$xml': 'src/test/resources/circularity.xml' }" );
+    }
+
+    @Test(expected = TagValidationException.class)
+    public void circularityJsonXml()
+    {
+        new ModelItem().appendFromJson( "{ '$json': 'src/test/resources/circularity-xml.json' }" );
+    }
+
+    @Test(expected = CircularityException.class)
+    public void circularityJson()
+    {
+        new ModelItem().appendFromJson( "{ '$json': 'src/test/resources/circularity.json' }" );
+    }
+    @Test(expected = TagValidationException.class)
+    public void circularityXmlJson()
+    {
+        new ModelItem().appendFromJson( "{ '$xml': 'src/test/resources/circularity-json.xml' }" );
+    }
 }

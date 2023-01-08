@@ -1,8 +1,10 @@
 package com.brentcroft.tools.model;
 
+import com.brentcroft.tools.materializer.Materializer;
 import org.xml.sax.InputSource;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -51,10 +53,11 @@ public interface Model extends Map< String, Object >
 
     void setParent( Map< String, Object > parent );
 
+    void setCurrentDirectory( Path directoryPath );
+
     Class< ? extends Model > getModelClass();
 
     Model newItemFromJson( String jsonText );
-    Model newItemFromXml( InputSource inputSource );
 
     void introspectEntries();
 
@@ -89,6 +92,17 @@ public interface Model extends Map< String, Object >
         Model item = newChild( this, jsonText );
         filteredPutAll( item );
         return this;
+    }
+
+    default Model appendFromXml( InputSource inputSource ) {
+        Model item = newItem();
+        item.setParent( this );
+        Materializer< Model > materializer = new Materializer<>(
+                () -> ModelRootTag.DOCUMENT_ROOT,
+                () -> item );
+        materializer.apply( inputSource );
+        filteredPutAll( item );
+        return item;
     }
 
     /**

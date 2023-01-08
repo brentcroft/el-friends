@@ -15,6 +15,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -43,6 +44,8 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
         JSON_MAPPER.setSerializationInclusion( JsonInclude.Include.NON_NULL );
         JSON_MAPPER.setSerializationInclusion( JsonInclude.Include.NON_EMPTY );
     }
+
+    private static final ThreadLocal<Stack<Path>> pathStack = ThreadLocal.withInitial( Stack::new );
 
     protected static String readFileFully( File file )
     {
@@ -89,17 +92,19 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
                 .orElse( null );
     }
 
-    private void setCurrentDirectory( File directory )
+    public void setCurrentDirectory( Path directoryPath )
     {
+        File directory = directoryPath.toFile();
         if (!directory.exists()) {
             throw new IllegalArgumentException(format("Directory does not exist: %s", directory.getPath()));
         }
         if (!directory.isDirectory()) {
             throw new IllegalArgumentException(format("Not a directory: %s", directory.getPath()));
         }
+
         File cd = getCurrentDirectory();
         if ( cd == null || !cd.equals( directory ) ) {
-            put("$currentDirectory", directory.getPath());
+            put("$currentDirectory", directoryPath.toString());
         }
     }
 
@@ -117,21 +122,33 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
     public void introspectEntries() {
         if (containsKey( "$json" )) {
             File file = getLocalFile(get("$json").toString());
-            setCurrentDirectory( file.getParentFile() );
-            appendFromJson( AbstractModelItem.readFileFully(file) );
+            putOnFileStack( file.toPath() );
+            try
+            {
+                setCurrentDirectory( file.getParentFile().toPath() );
+                appendFromJson( AbstractModelItem.readFileFully( file ) );
+            }
+            finally
+            {
+                pathStack.get().pop();
+            }
         }
         if (containsKey( "$xml" )) {
             File file = getLocalFile(get("$xml").toString());
-            setCurrentDirectory( file.getParentFile() );
+            putOnFileStack( file.toPath() );
             try
             {
-                newItemFromXml( new InputSource(new FileInputStream( file ) ) );
+                setCurrentDirectory( file.getParentFile().toPath() );
+                appendFromXml( new InputSource(new FileInputStream( file ) ) );
             }
             catch ( FileNotFoundException e )
             {
                 throw new RuntimeException(e);
             }
-//            materializeFromXmlFile(get("$xml").toString());
+            finally
+            {
+                pathStack.get().pop();
+            }
         }
         if (containsKey( "$properties" )) {
             overwritePropertiesFromFile(get("$properties").toString(), false);
@@ -141,15 +158,12 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
         }
     }
 
-    public Model newItemFromXml( InputSource inputSource ) {
-        Model item = newItem();
-        item.setParent( this );
-        Materializer< Model > materializer = new Materializer<>(
-                () -> ModelRootTag.DOCUMENT_ROOT,
-                () -> item );
-        materializer.apply( inputSource );
-        filteredPutAll( item );
-        return item;
+    protected void putOnFileStack( Path path ) {
+        if (!pathStack.get().isEmpty() && pathStack.get().stream()
+                .anyMatch( p -> p.equals(path) )) {
+            throw new CircularityException(format("File: '%s' is already on the stack", path));
+        }
+        pathStack.get().push( path );
     }
 
     public File getLocalFile(String filePath) {
@@ -182,7 +196,9 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
                 .entrySet()
                 .stream()
                 .filter( entry -> ! entry.getKey().startsWith( "$json" ))
+                .filter( entry -> ! entry.getKey().startsWith( "$xml" ))
                 .filter( entry -> ! entry.getKey().startsWith( "$properties" ))
+                .filter( entry -> ! entry.getKey().startsWith( "$properties-xml" ))
                 .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) ));
     }
 
