@@ -1,9 +1,11 @@
 package com.brentcroft.tools.model;
 
+import com.brentcroft.tools.materializer.ValidationException;
 import com.brentcroft.tools.materializer.core.OpenEvent;
 import com.brentcroft.tools.materializer.core.Tag;
 import com.brentcroft.tools.materializer.core.TriConsumer;
 import com.brentcroft.tools.materializer.model.*;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.Getter;
 
 import java.math.BigDecimal;
@@ -21,6 +23,8 @@ public enum ModelRootTag implements FlatTag< Model >
             ( model, event ) -> event.asStringMap().forEach( (k,v) -> model.put( "$" + k.trim(), v.trim() ) ),
             ( model, text) -> model.introspectEntries(),
             ModelTag.MODEL,
+            EntryTag.OBJECT,
+            EntryTag.JSON,
             EntryTag.ENTRY,
             EntryTag.TEXT,
             EntryTag.DATE,
@@ -70,6 +74,8 @@ enum ModelTag implements StepTag< Model, Model >
         {
             return Tag.tags(
                     MODEL,
+                    EntryTag.OBJECT,
+                    EntryTag.JSON,
                     EntryTag.ENTRY,
                     EntryTag.TEXT,
                     EntryTag.DATE,
@@ -112,6 +118,26 @@ enum ModelTag implements StepTag< Model, Model >
 @Getter
 enum EntryTag implements FlatTag< Model >
 {
+    OBJECT(
+            "el",
+            ( model, event ) -> event.getAttribute( "key" ),
+            ( model, text, key ) -> model.put( key, model.eval( text.trim() )  ) ),
+    JSON(
+            "json",
+            ( model, event ) -> event.getAttribute( "key" ),
+            ( model, text, key ) -> {
+                try
+                {
+                    Object value = AbstractModelItem.JSON_MAPPER.readValue( text, Object.class );
+                    model.put( key, value );
+                }
+                catch ( JsonProcessingException e )
+                {
+                    throw new ValidationException( EntryTag.valueOf( "JSON" ), e );
+                }
+            } ),
+
+
     ENTRY(
             "entry",
             ( model, event ) -> event.getAttribute( "key" ),

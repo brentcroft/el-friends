@@ -53,6 +53,8 @@ public interface Model extends Map< String, Object >
 
     void setParent( Map< String, Object > parent );
 
+    Path getCurrentDirectory();
+
     void setCurrentDirectory( Path directoryPath );
 
     Class< ? extends Model > getModelClass();

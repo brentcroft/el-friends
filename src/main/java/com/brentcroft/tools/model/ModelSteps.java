@@ -32,16 +32,12 @@ public class ModelSteps implements Runnable
         this.inline = true;
     }
 
-    private Stack<Model> stack() {
-        return stack.get();
-    }
-
     public void run()
     {
-        stack().push( model );
+        stack.get().push( model );
         try {
             String indent = IntStream
-                    .range(0, stack().size() )
+                    .range(0, stack.get().size() )
                     .mapToObj( i -> "  " )
                     .collect( Collectors.joining());
 
@@ -58,7 +54,7 @@ public class ModelSteps implements Runnable
                     .peek( step -> model.logStep(format("%s -> %s", indent, step)) )
                     .forEach( model::eval );
         } finally {
-            stack().pop();
+            stack.get().pop();
         }
     }
 }

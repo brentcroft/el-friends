@@ -1,6 +1,7 @@
 package com.brentcroft.tools.model;
 
 import com.brentcroft.tools.materializer.TagValidationException;
+import org.junit.Before;
 import org.junit.Test;
 import org.xml.sax.InputSource;
 
@@ -11,28 +12,35 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class ModelItemTest
 {
+    final Model item = new ModelItem();
+
+    @Before
+    public void setCurrentDirectory() {
+        item.setCurrentDirectory( Paths.get( "src/test/resources" ) );
+    }
+
     @Test
     public void createsEmptyModelItemFromJson() {
-        Model item = new ModelItem().appendFromJson( "{}" );
-        assertEquals("{}", item.toJson().replaceAll( " ", "" ));
+        Model emptyModel = new ModelItem().appendFromJson( "{}" );
+        assertEquals("{}", emptyModel.toJson().replaceAll( " ", "" ));
     }
 
     @Test
     public void createsModelItemFromJson() {
-        Model item = new ModelItem().appendFromJson( "{ 'fred': 'bloggs' }" );
+        item.appendFromJson( "{ 'fred': 'bloggs' }" );
         assertEquals("bloggs", item.get( "fred" ));
     }
 
     @Test
     public void calculatesPath() {
-        Model item = new ModelItem()
-                .appendFromJson( "{ 'people': { 'red': { 'hue': 123456 }, 'green': { 'hue': { 'x': 777 } }, 'blue': { 'hue': 345612 } } }" );
+        item.appendFromJson( "{ 'people': { 'red': { 'hue': 123456 }, 'green': { 'hue': { 'x': 777 } }, 'blue': { 'hue': 345612 } } }" );
         assertEquals("people.green.hue", item.getItem( "people.green.hue" ).path());
         item.setName("root");
         assertEquals("people.green.hue", item.getItem( "people.green.hue" ).path());
@@ -40,19 +48,18 @@ public class ModelItemTest
 
     @Test
     public void evaluatesRoot() {
-        Model item = new ModelItem()
+        item
                 .appendFromJson( "{ 'people': { 'red': { 'hue': 123456 }, 'green': { 'hue': { 'x': 777 } }, 'blue': { 'hue': 345612 } } }" );
         assertEquals(item, item.getItem( "people.green.hue" ).getRoot());
     }
 
     @Test
     public void evaluatesSelf() {
-        Model item = new ModelItem();
         assertEquals(item, item.eval( "$self" ));
     }
     @Test
     public void assignsToSelf() {
-        Model item = new ModelItem()
+        item
                 .appendFromJson( "{ 'fred': 'bloggs' }" )
                 .appendFromJson( "{ 'surname': 'bloggs' }" );
         item.eval( "$self.fred = surname" );
@@ -61,13 +68,13 @@ public class ModelItemTest
 
     @Test
     public void evaluatesParent() {
-        Model item = new ModelItem().insertFromJson( "someChild", "{}" );
+        item.insertFromJson( "someChild", "{}" );
         assertEquals(item, item.getItem( "someChild" ).eval( "$parent" ));
     }
 
     @Test
     public void assignsToParent() {
-        Model item = new ModelItem()
+        item
                 .appendFromJson( "{ 'fred': 'bloggs', 'xyz': { 'surname': 'bloggs' } }" );
         item.getItem( "xyz" ).eval( "$parent.blue = 'green'" );
         assertEquals("green", item.get( "blue" ));
@@ -75,13 +82,13 @@ public class ModelItemTest
 
     @Test
     public void createsModelItemFromJsonFile() {
-        Model item = new ModelItem().appendFromJson( "{ '$json': 'src/test/resources/root-01.json' }" );
+        item.appendFromJson( "{ '$json': 'root-01.json' }" );
         assertEquals("bloggs", item.get( "fred" ));
     }
 
     @Test
     public void loadsNestedFiles() {
-        Model item = new ModelItem().appendFromJson( "{ '$json': 'src/test/resources/nested-01.json' }" );
+        item.appendFromJson( "{ '$json': 'nested-01.json' }" );
         assertEquals(3, item.get( "level" ));
         assertEquals("3", item.expand( "${level}" ));
         assertEquals(3, item.eval( "level" ));
@@ -93,13 +100,13 @@ public class ModelItemTest
 
     @Test
     public void overwritesModelItemFromPropertiesFile() {
-        Model item = new ModelItem().appendFromJson( "{ '$json': 'src/test/resources/sub01/root-02.json' }" );
+        item.appendFromJson( "{ '$json': 'sub01/root-02.json' }" );
         assertEquals("boot", item.getItem( "less" ).get("foot"));
     }
 
     @Test
     public void overwritesModelItemFromPropertiesXmlFile() {
-        Model item = new ModelItem().appendFromJson( "{ '$properties-xml': 'src/test/resources/properties.xml' }" );
+        item.appendFromJson( "{ '$properties-xml': 'properties.xml' }" );
         assertEquals("234", item.get( "amount" ));
     }
 
@@ -107,7 +114,7 @@ public class ModelItemTest
     @Test
     public void materializesModelItemFromXmlFileReference()
     {
-        Model item = new ModelItem().appendFromJson( "{ '$xml': 'src/test/resources/brentcroft-site.xml' }" );
+        item.appendFromJson( "{ '$xml': 'brentcroft-site.xml' }" );
 
         System.out.println(item.toJson());
 
@@ -116,14 +123,20 @@ public class ModelItemTest
         assertTrue((Boolean)item.eval( "totals.valid" ));
         assertEquals( Duration.parse( "P2DT3H4M" ), item.eval( "totals.timeTaken" ));
         assertEquals( LocalDateTime.parse( "2007-12-03T10:15:30.123456789" ), item.eval( "totals.timestamp" ));
+
+        List<?> data = (List<?>)item.eval( "totals.data" );
+        long[] counter = {1};
+        data.forEach( datum -> assertEquals( counter[0]++, datum ) );
+
+        List<?> jsonData = (List<?>)item.eval( "totals.jsonData" );
+        int[] counter2 = {1};
+        jsonData.forEach( datum -> assertEquals( counter2[0]++, datum ) );
     }
 
     @Test
     public void materializesModelItem() throws FileNotFoundException
     {
-        Path path = Paths.get("src/test/resources/brentcroft-site.xml");
-        Model item = new ModelItem();
-        item.setCurrentDirectory( path.getParent() );
+        Path path = Paths.get( item.getCurrentDirectory().toString(), "brentcroft-site.xml");
         item.appendFromXml( new InputSource( new FileInputStream( path.toFile() ) ) );
 
         assertEquals(234.0, item.get( "amount" ));
@@ -132,14 +145,14 @@ public class ModelItemTest
 
     @Test
     public void insertsModelItem() {
-        Model item = new ModelItem().appendFromJson( "{ 'fred': 'bloggs' }" );
+        item.appendFromJson( "{ 'fred': 'bloggs' }" );
         item.insertFromJson( "inserted", "{ 'fred': { 'head': 'nose' } }" );
         assertEquals("nose", item.getItem( "inserted.fred" ).get("head"));
     }
 
     @Test
     public void usesExpander() {
-        Model item = new ModelItem()
+        item
                 .appendFromJson( "{ 'fred': 'bloggs' }" )
                 .insertFromJson( "inserted", "{ 'fred': { 'head': '${ hair }', 'hair': 'red' } }" );
 
@@ -150,7 +163,7 @@ public class ModelItemTest
 
     @Test
     public void usesEvaluator() {
-        Model item = new ModelItem()
+        item
                 .appendFromJson( "{ 'fred': 'bloggs' }" )
                 .insertFromJson( "inserted", "{ 'fred': { 'head': '${ hair }', 'hair': 'red' } }" );
 
@@ -162,7 +175,7 @@ public class ModelItemTest
 
     @Test
     public void usesWhileDo() {
-        Model item = new ModelItem()
+        item
                 .appendFromJson( "{ digits: [ 'a', 'b', 'c', '3', '5', '6', '7', '8', '9' ] }" );
 
         Object actual = item
@@ -175,8 +188,8 @@ public class ModelItemTest
 
     @Test
     public void usesModelSteps() {
-        Model item = new ModelItem()
-                .appendFromJson( "{ '$json': 'src/test/resources/nested-01.json' }" )
+        item
+                .appendFromJson( "{ '$json': 'nested-01.json' }" )
                 .insertFromJson( "incrementer","{ '$steps': '$parent.level = level + 1' }" );
 
         item.setName( "root" );
@@ -190,8 +203,8 @@ public class ModelItemTest
 
     @Test
     public void usesModelStepsInline() {
-        Model item = new ModelItem()
-                .appendFromJson( "{ '$json': 'src/test/resources/nested-01.json' }" )
+        item
+                .appendFromJson( "{ '$json': 'nested-01.json' }" )
                 .insertFromJson( "incrementer","{ '$steps': '$parent.level = level + 1' }" );
 
         item.setName( "root" );
@@ -211,23 +224,23 @@ public class ModelItemTest
     @Test(expected = TagValidationException.class)
     public void circularityXml()
     {
-        new ModelItem().appendFromJson( "{ '$xml': 'src/test/resources/circularity.xml' }" );
+        item.appendFromJson( "{ '$xml': 'circularity.xml' }" );
     }
 
     @Test(expected = TagValidationException.class)
     public void circularityJsonXml()
     {
-        new ModelItem().appendFromJson( "{ '$json': 'src/test/resources/circularity-xml.json' }" );
+        item.appendFromJson( "{ '$json': 'circularity-xml.json' }" );
     }
 
     @Test(expected = CircularityException.class)
     public void circularityJson()
     {
-        new ModelItem().appendFromJson( "{ '$json': 'src/test/resources/circularity.json' }" );
+        item.appendFromJson( "{ '$json': 'circularity.json' }" );
     }
     @Test(expected = TagValidationException.class)
     public void circularityXmlJson()
     {
-        new ModelItem().appendFromJson( "{ '$xml': 'src/test/resources/circularity-json.xml' }" );
+        item.appendFromJson( "{ '$xml': 'circularity-json.xml' }" );
     }
 }

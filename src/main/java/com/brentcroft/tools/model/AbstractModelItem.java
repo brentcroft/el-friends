@@ -16,6 +16,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -84,12 +85,12 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
         return super.put(key, value);
     }
 
-    protected File getCurrentDirectory()
+    public Path getCurrentDirectory()
     {
         return Optional
                 .ofNullable( (String)get("$currentDirectory") )
-                .map(File::new)
-                .orElse( null );
+                .map( Paths::get)
+                .orElse( Paths.get( "." ) );
     }
 
     public void setCurrentDirectory( Path directoryPath )
@@ -102,8 +103,8 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
             throw new IllegalArgumentException(format("Not a directory: %s", directory.getPath()));
         }
 
-        File cd = getCurrentDirectory();
-        if ( cd == null || !cd.equals( directory ) ) {
+        File cd = getCurrentDirectory().toFile();
+        if ( !cd.equals( directory ) ) {
             put("$currentDirectory", directoryPath.toString());
         }
     }
@@ -171,7 +172,7 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
                 .of( new File(filePath) )
                 .filter( File::exists )
                 .orElseGet( () -> {
-                    File cd = getCurrentDirectory();
+                    File cd = getCurrentDirectory().toFile();
                     return Optional
                             .of( new File(cd, filePath) )
                             .filter( File::exists )
@@ -207,7 +208,7 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
     {
         File file = new File(propertiesFilePath);
         if (!file.exists()) {
-            file = new File( getCurrentDirectory(), propertiesFilePath );
+            file = new File( getCurrentDirectory().toFile(), propertiesFilePath );
         }
 
         Properties p;
