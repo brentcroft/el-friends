@@ -6,6 +6,11 @@ import com.brentcroft.tools.materializer.core.TriConsumer;
 import com.brentcroft.tools.materializer.model.*;
 import lombok.Getter;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
@@ -13,9 +18,21 @@ import java.util.function.BiFunction;
 public enum ModelRootTag implements FlatTag< Model >
 {
     DOCUMENT_ELEMENT( "*",
-            ( model, event ) -> event.asMap().forEach( (k,v) -> model.put( "$" + k, v ) ),
+            ( model, event ) -> event.asStringMap().forEach( (k,v) -> model.put( "$" + k.trim(), v.trim() ) ),
             ( model, text) -> model.introspectEntries(),
-            ModelTag.MODEL, EntryTag.ENTRY ),
+            ModelTag.MODEL,
+            EntryTag.ENTRY,
+            EntryTag.TEXT,
+            EntryTag.DATE,
+            EntryTag.DATETIME,
+            EntryTag.DURATION,
+            EntryTag.INTEGER,
+            EntryTag.LONG,
+            EntryTag.DOUBLE,
+            EntryTag.BOOLEAN,
+            EntryTag.BIG_DECIMAL,
+            EntryTag.BIG_INTEGER
+            ),
     DOCUMENT_ROOT( "", DOCUMENT_ELEMENT );
 
     private final String tag;
@@ -45,13 +62,26 @@ enum ModelTag implements StepTag< Model, Model >
 {
     MODEL(
             "model",
-            ( model, event ) -> event.asMap().forEach( (k,v) -> model.put( "$" + k, v ) ),
+            ( model, event ) -> event.asStringMap().forEach( (k,v) -> model.put( "$" + k.trim(), v.trim() ) ),
             ( model, text) -> model.introspectEntries()
     ) {
         // dynamic method allows self-reference
         public Tag< ? super Model, ? >[] getChildren()
         {
-            return Tag.tags( MODEL, EntryTag.ENTRY );
+            return Tag.tags(
+                    MODEL,
+                    EntryTag.ENTRY,
+                    EntryTag.TEXT,
+                    EntryTag.DATE,
+                    EntryTag.DATETIME,
+                    EntryTag.DURATION,
+                    EntryTag.INTEGER,
+                    EntryTag.LONG,
+                    EntryTag.DOUBLE,
+                    EntryTag.BOOLEAN,
+                    EntryTag.BIG_DECIMAL,
+                    EntryTag.BIG_INTEGER
+            );
         }
     };
 
@@ -84,16 +114,50 @@ enum EntryTag implements FlatTag< Model >
 {
     ENTRY(
             "entry",
-            // cache the key
             ( model, event ) -> event.getAttribute( "key" ),
-            // maybe do conversions??
-            ( model, text, key ) -> model.put( key, text ) ),
+            ( model, text, key ) -> model.put( key, text.trim() ) ),
+    TEXT(
+            "text",
+            ( model, event ) -> event.getAttribute( "key" ),
+            ( model, text, key ) -> model.put( key, text.trim() ) ),
+
+    BOOLEAN(
+            "boolean",
+            ( model, event ) -> event.getAttribute( "key" ),
+            ( model, text, key ) -> model.put( key, Boolean.parseBoolean( text.trim() )  ) ),
+
     INTEGER(
-            "entry",
-                    // cache the key
-                    ( model, event ) -> event.getAttribute( "key" ),
-                // maybe do conversions??
-                ( model, text, key ) -> model.put( key, text ) )
+            "integer",
+            ( model, event ) -> event.getAttribute( "key" ),
+            ( model, text, key ) -> model.put( key, Integer.parseInt( text.trim() )  ) ),
+    LONG(
+            "long",
+            ( model, event ) -> event.getAttribute( "key" ),
+            ( model, text, key ) -> model.put( key, Long.parseLong( text.trim() )  ) ),
+    DOUBLE(
+            "double",
+            ( model, event ) -> event.getAttribute( "key" ),
+            ( model, text, key ) -> model.put( key, Double.parseDouble( text.trim() )  ) ),
+    BIG_INTEGER(
+            "big-integer",
+            ( model, event ) -> event.getAttribute( "key" ),
+            ( model, text, key ) -> model.put( key, new BigInteger( text.trim() )  ) ),
+    BIG_DECIMAL(
+            "big-decimal",
+            ( model, event ) -> event.getAttribute( "key" ),
+            ( model, text, key ) -> model.put( key, new BigDecimal( text.trim() )  ) ),
+    DATE(
+            "date",
+            ( model, event ) -> event.getAttribute( "key" ),
+            ( model, text, key ) -> model.put( key, LocalDate.parse( text.trim() )  ) ),
+    DATETIME(
+            "datetime",
+            ( model, event ) -> event.getAttribute( "key" ),
+            ( model, text, key ) -> model.put( key, LocalDateTime.parse( text.trim() )  ) ),
+    DURATION(
+            "duration",
+            ( model, event ) -> event.getAttribute( "key" ),
+            ( model, text, key ) -> model.put( key, Duration.parse( text.trim() )  ) )
     ;
 
     private final String tag;

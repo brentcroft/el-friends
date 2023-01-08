@@ -7,10 +7,13 @@ import org.xml.sax.InputSource;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class ModelItemTest
 {
@@ -108,8 +111,11 @@ public class ModelItemTest
 
         System.out.println(item.toJson());
 
-        assertEquals("234", item.get( "amount" ));
-        assertEquals("0.15", item.getItem( "totals" ).get( "amount" ));
+        assertEquals(234.0, item.get( "amount" ));
+        assertEquals(0.15, item.eval( "totals.amount" ));
+        assertTrue((Boolean)item.eval( "totals.valid" ));
+        assertEquals( Duration.parse( "P2DT3H4M" ), item.eval( "totals.timeTaken" ));
+        assertEquals( LocalDateTime.parse( "2007-12-03T10:15:30.123456789" ), item.eval( "totals.timestamp" ));
     }
 
     @Test
@@ -128,8 +134,8 @@ public class ModelItemTest
                 .apply(
                         new InputSource(
                                 new FileInputStream( "src/test/resources/brentcroft-site.xml" ) ) );
-        assertEquals("234", item.get( "amount" ));
-        assertEquals("0.15", item.getItem( "totals" ).get( "amount" ));
+        assertEquals(234.0, item.get( "amount" ));
+        assertEquals(0.15, item.getItem( "totals" ).get( "amount" ));
     }
 
     @Test

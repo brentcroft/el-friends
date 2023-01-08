@@ -1,18 +1,21 @@
 <brentcroft
         key="brentcroft"
         json="nested-01.json">
-    <entry key="amount">234</entry>
+    <double key="amount">234</double>
     <model key="totals">
-        <entry key="amount">0.15</entry>
+        <boolean key="valid">true</boolean>
+        <double key="amount">0.15</double>
+        <duration key="timeTaken">P2DT3H4M</duration>
+        <datetime key="timestamp">2007-12-03T10:15:30.123456789</datetime>
     </model>
     <model key="home">
         <model key="shithead">
-            <entry key="$xpath">//a[ @href = 'shithead/shithead.html' ]</entry>
+            <text key="$xpath">//a[ @href = 'shithead/shithead.html' ]</text>
         </model>
     </model>
     <model key="openShithead">
-        <entry key="$steps">
+        <text key="$steps">
             home.shithead.click;
-        </entry>
+        </text>
     </model>
 </brentcroft>
