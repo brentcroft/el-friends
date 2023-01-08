@@ -6,56 +6,35 @@ import com.brentcroft.tools.materializer.core.TriConsumer;
 import com.brentcroft.tools.materializer.model.*;
 import lombok.Getter;
 
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
 @Getter
 public enum ModelRootTag implements FlatTag< Model >
 {
     DOCUMENT_ELEMENT( "*",
-            ( model, event ) -> event,
-            ( model, text, event) -> {
-
-                event.applyAttribute(
-                        "json",
-                        false,
-                        String::trim,
-                        ( filename ) -> model.put("$json", filename) );
-
-                event.applyAttribute(
-                        "properties",
-                        false,
-                        String::trim,
-                        ( filename ) -> model.put("$properties", filename) );
-
-                event.applyAttribute(
-                        "properties-xml",
-                        false,
-                        String::trim,
-                        ( filename ) -> model.put( "$properties-xml", filename ) );
-
-                model.introspectEntries();
-
-            },
+            ( model, event ) -> event.asMap().forEach( (k,v) -> model.put( "$" + k, v ) ),
+            ( model, text) -> model.introspectEntries(),
             ModelTag.MODEL, EntryTag.ENTRY ),
     DOCUMENT_ROOT( "", DOCUMENT_ELEMENT );
 
     private final String tag;
     private final boolean multiple = true;
     private final boolean choice = true;
-    private final FlatCacheOpener< Model, OpenEvent, ? > opener;
-    private final FlatCacheCloser< Model, String, ? > closer;
+    private final FlatOpener< Model, OpenEvent > opener;
+    private final FlatCloser< Model, String > closer;
     private final Tag< ? super Model, ? >[] children;
 
     @SafeVarargs
-    <T> ModelRootTag( String tag, BiFunction< Model, OpenEvent, T > opener, TriConsumer< Model, String, T > closer, Tag< ? super Model, ? >... children )
+    ModelRootTag( String tag, BiConsumer< Model, OpenEvent> opener, BiConsumer< Model, String> closer, Tag< ? super Model, ? >... children )
     {
         this.tag = tag;
-        this.opener = Opener.flatCacheOpener( opener );
-        this.closer = Closer.flatCacheCloser( closer );
+        this.opener = Opener.flatOpener( opener );
+        this.closer = Closer.flatCloser( closer );
         this.children = children;
     }
     @SafeVarargs
-    <T> ModelRootTag( String tag, Tag< ? super Model, ? >... children )
+    ModelRootTag( String tag, Tag< ? super Model, ? >... children )
     {
         this(tag, null, null, children);
     }
@@ -66,34 +45,8 @@ enum ModelTag implements StepTag< Model, Model >
 {
     MODEL(
             "model",
-            // cache the open event
-            ( model, event ) -> event,
-
-            // children processed ...
-
-            // pull any overrides
-            ( model, text, event) -> {
-
-                event.applyAttribute(
-                        "json",
-                        false,
-                        String::trim,
-                        ( filename ) -> model.put("$json", filename) );
-
-                event.applyAttribute(
-                        "properties",
-                        false,
-                        String::trim,
-                        ( filename ) -> model.put("$properties", filename) );
-
-                event.applyAttribute(
-                        "properties-xml",
-                        false,
-                        String::trim,
-                        ( filename ) -> model.put( "$properties-xml", filename ) );
-
-                model.introspectEntries();
-            }
+            ( model, event ) -> event.asMap().forEach( (k,v) -> model.put( "$" + k, v ) ),
+            ( model, text) -> model.introspectEntries()
     ) {
         // dynamic method allows self-reference
         public Tag< ? super Model, ? >[] getChildren()
@@ -105,14 +58,14 @@ enum ModelTag implements StepTag< Model, Model >
     private final boolean multiple = true;
     private final boolean choice = true;
     private final String tag;
-    private final FlatCacheOpener< Model, OpenEvent, ? > opener;
-    private final FlatCacheCloser< Model, String, ? > closer;
+    private final FlatOpener< Model, OpenEvent > opener;
+    private final FlatCloser< Model, String > closer;
 
-    <T> ModelTag( String tag, BiFunction< Model, OpenEvent, T > opener, TriConsumer< Model, String, T > closer )
+    ModelTag( String tag, BiConsumer< Model, OpenEvent> opener, BiConsumer< Model, String> closer )
     {
         this.tag = tag;
-        this.opener = Opener.flatCacheOpener( opener );
-        this.closer = Closer.flatCacheCloser( closer );
+        this.opener = Opener.flatOpener( opener );
+        this.closer = Closer.flatCloser( closer );
     }
 
     @Override
