@@ -275,8 +275,8 @@ public interface Model extends Map< String, Object >
             tries++;
             try {
                 eval( operation );
+                maybeDelay();
             } catch (Exception ignored) {
-
             }
         }
         if ( whileTest.get() ) {
@@ -284,56 +284,67 @@ public interface Model extends Map< String, Object >
         }
         return this;
     }
-}
-interface Expander extends BiFunction<String, Map<String, Object>, String> {}
-interface Evaluator extends BiFunction<String, Map<String, Object>, Object> {}
-class Steps implements Runnable
-{
-    private final String steps;
-    private final Model model;
-    private final boolean inline;
-
-    private static final ThreadLocal< Stack<Model> > stack = ThreadLocal.withInitial( Stack::new );
-
-    public Steps( Model model )
-    {
-        this.model = model;
-        this.steps = Optional
-                .ofNullable(model.get("$steps"))
-                .map(Object::toString)
-                .orElseThrow(() -> new IllegalArgumentException(format("Item [%s] has no value for $steps", model.path())));
-        this.inline = false;
+    default void maybeDelay() {
+        try
+        {
+            long delay = (long) getOrDefault( "$delay", 100L );
+            Thread.sleep( delay );
+        }
+        catch ( InterruptedException e )
+        {
+            e.printStackTrace();
+        }
     }
-
-    public Steps( Model model, String steps ) {
-        this.model = model;
-        this.steps = steps;
-        this.inline = true;
-    }
-
-    public void run()
+    interface Expander extends BiFunction<String, Map<String, Object>, String> {}
+    interface Evaluator extends BiFunction<String, Map<String, Object>, Object> {}
+    class Steps implements Runnable
     {
-        stack.get().push( model );
-        try {
-            String indent = IntStream
-                    .range(0, stack.get().size() )
-                    .mapToObj( i -> "  " )
-                    .collect( Collectors.joining());
+        private final String steps;
+        private final Model model;
+        private final boolean inline;
 
-            String modelPath = model.path();
+        private static final ThreadLocal< Stack<Model> > stack = ThreadLocal.withInitial( Stack::new );
 
-            model.logStep(
-                    inline
-                    ? format("%s%s(inline)", indent, modelPath.isEmpty() ? "" : (modelPath + ":"))
-                    : format("%s%s$steps", indent, modelPath.isEmpty() ? "" : (modelPath + ".") )
-            );
+        public Steps( Model model )
+        {
+            this.model = model;
+            this.steps = Optional
+                    .ofNullable(model.get("$steps"))
+                    .map(Object::toString)
+                    .orElseThrow(() -> new IllegalArgumentException(format("Item [%s] has no value for $steps", model.path())));
+            this.inline = false;
+        }
 
-            Model
-                    .stepsStream( model.expand( steps ) )
-                    .peek( step -> model.logStep(format("%s -> %s", indent, step)) )
-                    .forEach( model::eval );
-        } finally {
-            stack.get().pop();
+        public Steps( Model model, String steps ) {
+            this.model = model;
+            this.steps = steps;
+            this.inline = true;
+        }
+
+        public void run()
+        {
+            stack.get().push( model );
+            try {
+                String indent = IntStream
+                        .range(0, stack.get().size() )
+                        .mapToObj( i -> "  " )
+                        .collect( Collectors.joining());
+
+                String modelPath = model.path();
+
+                model.logStep(
+                        inline
+                        ? format("%s%s(inline)", indent, modelPath.isEmpty() ? "" : (modelPath + ":"))
+                        : format("%s%s$steps", indent, modelPath.isEmpty() ? "" : (modelPath + ".") )
+                );
+
+                Model
+                        .stepsStream( model.expand( steps ) )
+                        .peek( step -> model.logStep(format("%s -> %s", indent, step)) )
+                        .forEach( model::eval );
+            } finally {
+                stack.get().pop();
+            }
         }
     }
 }

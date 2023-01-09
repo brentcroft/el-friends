@@ -15,6 +15,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 @Getter
 public enum ModelRootTag implements FlatTag< Model >
@@ -27,6 +28,7 @@ public enum ModelRootTag implements FlatTag< Model >
             EntryTag.JSON,
             EntryTag.ENTRY,
             EntryTag.TEXT,
+            EntryTag.STEPS,
             EntryTag.DATE,
             EntryTag.DATETIME,
             EntryTag.DURATION,
@@ -78,6 +80,7 @@ enum ModelTag implements StepTag< Model, Model >
                     EntryTag.JSON,
                     EntryTag.ENTRY,
                     EntryTag.TEXT,
+                    EntryTag.STEPS,
                     EntryTag.DATE,
                     EntryTag.DATETIME,
                     EntryTag.DURATION,
@@ -122,6 +125,7 @@ enum EntryTag implements FlatTag< Model >
             "el",
             ( model, event ) -> event.getAttribute( "key" ),
             ( model, text, key ) -> model.put( key, model.eval( text.trim() )  ) ),
+
     JSON(
             "json",
             ( model, event ) -> event.getAttribute( "key" ),
@@ -141,6 +145,14 @@ enum EntryTag implements FlatTag< Model >
             "entry",
             ( model, event ) -> event.getAttribute( "key" ),
             ( model, text, key ) -> model.put( key, text.trim() ) ),
+
+    STEPS(
+            "steps",
+            ( model, event ) -> event.getAttribute( "key" ),
+            ( model, text, key ) -> model.put( key, Model
+                    .stepsStream( text.trim() )
+                    .collect( Collectors.joining(" ; "))  ) ),
+
     TEXT(
             "text",
             ( model, event ) -> event.getAttribute( "key" ),

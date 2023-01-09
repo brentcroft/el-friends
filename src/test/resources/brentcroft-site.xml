@@ -16,8 +16,10 @@
         </model>
     </model>
     <model key="openShithead">
-        <text key="$steps">
+        <steps key="$steps">
+            c:delay(100);
             home.shithead.click;
-        </text>
+            c:delay(100);
+        </steps>
     </model>
 </brentcroft>

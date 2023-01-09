@@ -199,12 +199,12 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
         putAll( item
                 .entrySet()
                 .stream()
-                .filter( entry -> ! entry.getKey().startsWith( "$" ))
-//                .filter( entry -> ! entry.getKey().startsWith( "$onload" ))
-//                .filter( entry -> ! entry.getKey().startsWith( "$json" ))
-//                .filter( entry -> ! entry.getKey().startsWith( "$xml" ))
-//                .filter( entry -> ! entry.getKey().startsWith( "$properties" ))
-//                .filter( entry -> ! entry.getKey().startsWith( "$properties-xml" ))
+//                .filter( entry -> ! entry.getKey().startsWith( "$" ))
+                .filter( entry -> ! entry.getKey().startsWith( "$onload" ))
+                .filter( entry -> ! entry.getKey().startsWith( "$json" ))
+                .filter( entry -> ! entry.getKey().startsWith( "$xml" ))
+                .filter( entry -> ! entry.getKey().startsWith( "$properties" ))
+                .filter( entry -> ! entry.getKey().startsWith( "$properties-xml" ))
                 .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) ));
     }
 

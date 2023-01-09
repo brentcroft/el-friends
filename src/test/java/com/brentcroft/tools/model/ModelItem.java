@@ -7,14 +7,7 @@ import java.util.Map;
 
 public class ModelItem extends AbstractModelItem
 {
-    private static Expander expander;
-    private static Evaluator evaluator;
-
-    static {
-        JstlTemplateManager jstl = new JstlTemplateManager();
-        ModelItem.expander = jstl::expandText;
-        ModelItem.evaluator = jstl::eval;
-    }
+    private static final JstlTemplateManager jstl = new JstlTemplateManager();
 
     @Override
     public Map< String, Object > newContainer()
@@ -25,11 +18,14 @@ public class ModelItem extends AbstractModelItem
         return bindings;
     }
 
+    @Override
     public Expander getExpander() {
-        return expander;
+        return jstl::expandText;
     }
+
+    @Override
     public Evaluator getEvaluator() {
-        return evaluator;
+        return jstl::eval;
     }
 
     @Override
