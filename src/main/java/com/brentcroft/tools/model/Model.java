@@ -77,7 +77,7 @@ public interface Model extends Map< String, Object >
 
     static Stream<String> stepsStream(String value) {
         return Stream
-                .of(value.split( "\\s*[;\\n\\r]+\\s*" ))
+                .of(value.replaceAll( "\\s*[\\n\\r]+\\s*"," " ).split( "\\s*[;]+\\s*" ))
                 .map( String::trim )
                 .filter( v -> !v.isEmpty() && !v.startsWith( "#" ) );
     }
