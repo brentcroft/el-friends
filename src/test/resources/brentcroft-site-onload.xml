@@ -1,0 +1,3 @@
+<brentcroft onload="$self.run()" steps="home.blarney = 'stone'">
+    <model key="home"/>
+</brentcroft>

@@ -23,7 +23,7 @@ public enum ModelRootTag implements FlatTag< Model >
             ( model, event ) -> event.asStringMap().forEach( (k,v) -> model.put( "$" + k.trim(), v.trim() ) ),
             ( model, text) -> model.introspectEntries(),
             ModelTag.MODEL,
-            EntryTag.OBJECT,
+            EntryTag.EL,
             EntryTag.JSON,
             EntryTag.ENTRY,
             EntryTag.TEXT,
@@ -74,7 +74,7 @@ enum ModelTag implements StepTag< Model, Model >
         {
             return Tag.tags(
                     MODEL,
-                    EntryTag.OBJECT,
+                    EntryTag.EL,
                     EntryTag.JSON,
                     EntryTag.ENTRY,
                     EntryTag.TEXT,
@@ -118,7 +118,7 @@ enum ModelTag implements StepTag< Model, Model >
 @Getter
 enum EntryTag implements FlatTag< Model >
 {
-    OBJECT(
+    EL(
             "el",
             ( model, event ) -> event.getAttribute( "key" ),
             ( model, text, key ) -> model.put( key, model.eval( text.trim() )  ) ),
@@ -136,7 +136,6 @@ enum EntryTag implements FlatTag< Model >
                     throw new ValidationException( EntryTag.valueOf( "JSON" ), e );
                 }
             } ),
-
 
     ENTRY(
             "entry",

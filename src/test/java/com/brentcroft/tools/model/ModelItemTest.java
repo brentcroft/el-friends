@@ -134,6 +134,21 @@ public class ModelItemTest
     }
 
     @Test
+    public void appliesXmlOnload()
+    {
+        item.appendFromJson( "{ '$xml': 'brentcroft-site-onload.xml' }" );
+        assertEquals("stone", item.eval( "home.blarney" ));
+    }
+
+    @Test
+    public void appliesJsonOnload()
+    {
+        item.appendFromJson( "{ '$steps': '$self.fred = \"bloggs\"', '$onload': '$self.run()' }" );
+        assertEquals("bloggs", item.eval( "fred" ));
+    }
+
+
+    @Test
     public void materializesModelItem() throws FileNotFoundException
     {
         Path path = Paths.get( item.getCurrentDirectory().toString(), "brentcroft-site.xml");

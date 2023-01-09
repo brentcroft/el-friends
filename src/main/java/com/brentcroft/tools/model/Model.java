@@ -7,7 +7,11 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Stack;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.lang.String.format;
@@ -15,19 +19,60 @@ import static java.util.Objects.nonNull;
 
 public interface Model extends Map< String, Object >
 {
+
+    Map<String, Object> newContainer();
+
+    Expander getExpander();
+    Evaluator getEvaluator();
+
     default void logStep( String text ) {
         System.out.println( text );
     }
 
-    Object eval( String value );
 
+
+    /**
+     * Expands a value using the expander
+     * or else just returns the value.
+     *
+     * @param value the value to be expanded
+     * @return the expanded value
+     */
     default String expand( String value )
     {
-        return value;
+        return Optional
+                .ofNullable(getExpander())
+                .map(exp -> exp.apply( value, newContainer() ) )
+                .orElse( value );
+    }
+
+    /**
+     * Evaluates a value using the evaluator
+     * or else returns null.
+     *
+     * The value is expanded prior to evaluation.
+     *
+     * @param value the value to be evaluated
+     * @return the evaluated value
+     */
+    default Object eval( String value )
+    {
+        return Optional
+                .ofNullable( getEvaluator() )
+                .map( evaluator -> {
+                    Map<String, Object> bindings = newContainer();
+                    Object[] lastResult = {null};
+                    Model
+                            .stepsStream( value )
+//                            .map( this::expand )
+                            .forEach( step -> lastResult[0] = getEvaluator().apply( step, bindings ) );
+                    return lastResult[0];
+                } )
+                .orElse( null );
     }
 
     default void run() {
-        new ModelSteps(this).run();
+        new Steps(this).run();
     }
 
     static Stream<String> stepsStream(String value) {
@@ -38,7 +83,7 @@ public interface Model extends Map< String, Object >
     }
 
     default void steps(String steps) {
-        new ModelSteps(this, steps).run();
+        new Steps(this, steps).run();
     }
 
     String toJson();
@@ -238,5 +283,57 @@ public interface Model extends Map< String, Object >
             throw new IllegalArgumentException(format("Ran out of tries (%s) but: %s", tries, booleanTest ));
         }
         return this;
+    }
+}
+interface Expander extends BiFunction<String, Map<String, Object>, String> {}
+interface Evaluator extends BiFunction<String, Map<String, Object>, Object> {}
+class Steps implements Runnable
+{
+    private final String steps;
+    private final Model model;
+    private final boolean inline;
+
+    private static final ThreadLocal< Stack<Model> > stack = ThreadLocal.withInitial( Stack::new );
+
+    public Steps( Model model )
+    {
+        this.model = model;
+        this.steps = Optional
+                .ofNullable(model.get("$steps"))
+                .map(Object::toString)
+                .orElseThrow(() -> new IllegalArgumentException(format("Item [%s] has no value for $steps", model.path())));
+        this.inline = false;
+    }
+
+    public Steps( Model model, String steps ) {
+        this.model = model;
+        this.steps = steps;
+        this.inline = true;
+    }
+
+    public void run()
+    {
+        stack.get().push( model );
+        try {
+            String indent = IntStream
+                    .range(0, stack.get().size() )
+                    .mapToObj( i -> "  " )
+                    .collect( Collectors.joining());
+
+            String modelPath = model.path();
+
+            model.logStep(
+                    inline
+                    ? format("%s%s(inline)", indent, modelPath.isEmpty() ? "" : (modelPath + ":"))
+                    : format("%s%s$steps", indent, modelPath.isEmpty() ? "" : (modelPath + ".") )
+            );
+
+            Model
+                    .stepsStream( model.expand( steps ) )
+                    .peek( step -> model.logStep(format("%s -> %s", indent, step)) )
+                    .forEach( model::eval );
+        } finally {
+            stack.get().pop();
+        }
     }
 }
