@@ -76,10 +76,14 @@ public interface Model extends Map< String, Object >
     }
 
     static Stream<String> stepsStream(String value) {
-        return Stream
-                .of(value.replaceAll( "\\s*[\\n\\r]+\\s*"," " ).split( "\\s*[;]+\\s*" ))
+        String uncommented = Stream
+                .of(value.split( "\\s*[\\n\\r]+\\s*" ))
+                .filter( v -> !v.isEmpty() && !v.startsWith( "#" ) )
+                // .of(value.replaceAll( "\\s*[\\n\\r]+\\s*"," " ).split( "\\s*[;]+\\s*" ))
                 .map( String::trim )
-                .filter( v -> !v.isEmpty() && !v.startsWith( "#" ) );
+                .collect( Collectors.joining(" "));
+        return Stream
+                .of(uncommented.split( "\\s*[;]+\\s*" ));
     }
 
     default void steps(String steps) {
