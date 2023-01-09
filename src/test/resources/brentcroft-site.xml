@@ -15,8 +15,9 @@
             <text key="$xpath">//a[ @href = 'shithead/shithead.html' ]</text>
         </model>
     </model>
-    <model key="openShithead">
+    <model key="openShithead        ">
         <steps key="$steps">
+            # comment lines are stripped out
             c:delay(100);
             home.shithead.click;
             c:delay(100);

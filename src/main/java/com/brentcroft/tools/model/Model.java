@@ -29,7 +29,7 @@ public interface Model extends Map< String, Object >
         System.out.println( text );
     }
 
-
+    Object putRootStatic( String key, Object value);
 
     /**
      * Expands a value using the expander
@@ -79,7 +79,6 @@ public interface Model extends Map< String, Object >
         String uncommented = Stream
                 .of(value.split( "\\s*[\\n\\r]+\\s*" ))
                 .filter( v -> !v.isEmpty() && !v.startsWith( "#" ) )
-                // .of(value.replaceAll( "\\s*[\\n\\r]+\\s*"," " ).split( "\\s*[;]+\\s*" ))
                 .map( String::trim )
                 .collect( Collectors.joining(" "));
         return Stream

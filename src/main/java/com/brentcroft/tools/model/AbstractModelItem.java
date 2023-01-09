@@ -48,6 +48,13 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
 
     private static final ThreadLocal<Stack<Path>> pathStack = ThreadLocal.withInitial( Stack::new );
 
+    private static final Map<String,Object> staticModel = new LinkedHashMap<>();
+
+    public AbstractModelItem()
+    {
+        putAll( staticModel );
+    }
+
     protected static String readFileFully( File file )
     {
         try
@@ -84,6 +91,21 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
         }
         return super.put(key, value);
     }
+
+    public Object putRootStatic( String key, Object value) {
+        if (staticModel.containsKey( key )) {
+            return staticModel.get( key );
+        }
+        try
+        {
+            return getRoot().put( key, value );
+        }
+        finally
+        {
+            staticModel.put( key, get( key ) );
+        }
+    }
+
 
     public Path getCurrentDirectory()
     {

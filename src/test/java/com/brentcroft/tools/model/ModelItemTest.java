@@ -235,6 +235,16 @@ public class ModelItemTest
         assertEquals(10L, item.get( "level" ));
     }
 
+    @Test
+    public void putsRootStatic() {
+        item.putRootStatic( "vegetable", "carrot" );
+        assertEquals("carrot", item.eval( "vegetable" ));
+
+        item.eval( "$self.vegetable = 'potato'" );
+        assertEquals("potato", item.eval( "vegetable" ));
+
+        assertEquals("carrot", new ModelItem().eval( "vegetable" ));
+    }
 
     @Test(expected = TagValidationException.class)
     public void circularityXml()
