@@ -4,16 +4,16 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>com.brentcroft.tools</groupId>
-	<artifactId>el-friends</artifactId>
-	<version>01.01.17</version>
+	<artifactId>el-model</artifactId>
+	<version>01.01.01</version>
 
-	<name>Brentcroft EL/JSTL Support</name>
+	<name>Brentcroft EL Model</name>
 
 	<description>
-		Simple utilities for use in EL.
+		Hierarchical Map, materialized from JSON, XML and properties, supporting EL plates.
 	</description>
 
-	<url>http://github.com/brentcroft/el-plates</url>
+	<url>http://github.com/brentcroft/el-model</url>
 
 	<licenses>
 		<license>
@@ -32,9 +32,9 @@
 	</developers>
 
 	<scm>
-		<connection>scm:git:git:https://github.com/brentcroft/el-friends.git</connection>
-		<developerConnection>scm:git:ssh:https://github.com/brentcroft/el-friends.git</developerConnection>
-		<url>http://github.com/brentcroft/el-friends</url>
+		<connection>scm:git:git:https://github.com/brentcroft/el-model.git</connection>
+		<developerConnection>scm:git:ssh:https://github.com/brentcroft/el-model.git</developerConnection>
+		<url>http://github.com/brentcroft/el-model</url>
 	</scm>
 
 	<properties>

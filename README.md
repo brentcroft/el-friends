@@ -1,6 +1,6 @@
-# el-friends
+# el-model
 
-[![Maven Central](https://img.shields.io/maven-central/v/com.brentcroft.tools/el-friends.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22com.brentcroft.tools%22%20AND%20a:%22el-friends%22)
+[![Maven Central](https://img.shields.io/maven-central/v/com.brentcroft.tools/el-model.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22com.brentcroft.tools%22%20AND%20a:%22el-model%22)
 
 Hierarchical map friendly to EL.
 
@@ -16,14 +16,7 @@ import java.util.Map;
 
 public class ModelItem extends AbstractModelItem
 {
-    private static Expander expander;
-    private static Evaluator evaluator;
-
-    static {
-        JstlTemplateManager jstl = new JstlTemplateManager();
-        ModelItem.expander = jstl::expandText;
-        ModelItem.evaluator = jstl::eval;
-    }
+    private static final JstlTemplateManager jstl = new JstlTemplateManager();
 
     @Override
     public Map< String, Object > newContainer()
@@ -34,11 +27,14 @@ public class ModelItem extends AbstractModelItem
         return bindings;
     }
 
+    @Override
     public Expander getExpander() {
-        return expander;
+        return jstl::expandText;
     }
+
+    @Override
     public Evaluator getEvaluator() {
-        return evaluator;
+        return jstl::eval;
     }
 
     @Override
