@@ -50,11 +50,6 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
 
     private static final Map<String,Object> staticModel = new LinkedHashMap<>();
 
-    public AbstractModelItem()
-    {
-        putAll( staticModel );
-    }
-
     protected static String readFileFully( File file )
     {
         try
@@ -82,7 +77,7 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
                             Object v = p.get(key);
                             return  v instanceof String ? expand((String)v) : v;
                         })
-                        .orElse( null ));
+                        .orElse( staticModel.get( key ) ));
     }
 
     public Object put(String key, Object value) {
@@ -92,20 +87,18 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
         return super.put(key, value);
     }
 
-    public Object putRootStatic( String key, Object value) {
+    public Object putStatic(String key, Object value) {
         if (staticModel.containsKey( key )) {
             return staticModel.get( key );
         }
-        try
-        {
-            return getRoot().put( key, value );
-        }
-        finally
-        {
-            staticModel.put( key, get( key ) );
-        }
+        Object oldValue = getRoot().put( key, value );
+        staticModel.put( key, get( key ) );
+        return oldValue;
     }
 
+    public Map<String,Object> getStaticModel() {
+        return staticModel;
+    }
 
     public Path getCurrentDirectory()
     {

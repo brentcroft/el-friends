@@ -14,8 +14,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class ModelItemTest
 {
@@ -28,6 +27,7 @@ public class ModelItemTest
 
     @Test
     public void createsEmptyModelItemFromJson() {
+        new ModelItem().getStaticModel().clear();
         Model emptyModel = new ModelItem().appendFromJson( "{}" );
         assertEquals("{}", emptyModel.toJson().replaceAll( " ", "" ));
     }
@@ -236,8 +236,9 @@ public class ModelItemTest
     }
 
     @Test
-    public void putsRootStatic() {
-        item.putRootStatic( "vegetable", "carrot" );
+    public void usesStaticScope() {
+        Object oldValue = item.putStatic( "vegetable", "carrot" );
+        assertNull(oldValue);
         assertEquals("carrot", item.eval( "vegetable" ));
 
         item.eval( "$self.vegetable = 'potato'" );
