@@ -8,11 +8,9 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Stack;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.lang.String.format;
@@ -42,9 +40,10 @@ public interface Model extends Map< String, Object >
      */
     default String expand( String value )
     {
+        final Map<String, Object> bindings = getCurrentScope();
         return Optional
                 .ofNullable(getExpander())
-                .map(exp -> exp.apply( value, newContainer() ) )
+                .map(exp -> exp.apply( value, bindings ) )
                 .orElse( value );
     }
 
@@ -57,23 +56,25 @@ public interface Model extends Map< String, Object >
      */
     default Object eval( String value )
     {
+        final Map<String, Object> bindings = getCurrentScope();
         return Optional
                 .ofNullable( getEvaluator() )
                 .map( evaluator -> {
-                    Map<String, Object> bindings = newContainer();
                     Object[] lastResult = {null};
                     Model
                             .stepsStream( value )
-//                            .map( this::expand )
                             .forEach( step -> lastResult[0] = getEvaluator().apply( step, bindings ) );
                     return lastResult[0];
                 } )
                 .orElse( null );
     }
 
-    default void run() {
-        new Steps(this).run();
+    default Map<String, Object> getCurrentScope()
+    {
+        return newContainer();
     }
+    void setCurrentScope(Map<String, Object> scope);
+    void dropCurrentScope();
 
     static Stream<String> stepsStream(String value) {
         String uncommented = Stream
@@ -84,10 +85,8 @@ public interface Model extends Map< String, Object >
         return Stream
                 .of(uncommented.split( "\\s*[;]+\\s*" ));
     }
-
-    default void steps(String steps) {
-        new Steps(this, steps).run();
-    }
+    void run();
+    void steps(String steps);
 
     String toJson();
 
@@ -329,54 +328,4 @@ public interface Model extends Map< String, Object >
     }
     interface Expander extends BiFunction<String, Map<String, Object>, String> {}
     interface Evaluator extends BiFunction<String, Map<String, Object>, Object> {}
-    class Steps implements Runnable
-    {
-        private final String steps;
-        private final Model model;
-        private final boolean inline;
-
-        private static final ThreadLocal< Stack<Model> > stack = ThreadLocal.withInitial( Stack::new );
-
-        public Steps( Model model )
-        {
-            this.model = model;
-            this.steps = Optional
-                    .ofNullable(model.get("$steps"))
-                    .map(Object::toString)
-                    .orElseThrow(() -> new IllegalArgumentException(format("Item [%s] has no value for $steps", model.path())));
-            this.inline = false;
-        }
-
-        public Steps( Model model, String steps ) {
-            this.model = model;
-            this.steps = steps;
-            this.inline = true;
-        }
-
-        public void run()
-        {
-            stack.get().push( model );
-            try {
-                String indent = IntStream
-                        .range(0, stack.get().size() )
-                        .mapToObj( i -> "  " )
-                        .collect( Collectors.joining());
-
-                String modelPath = model.path();
-
-                model.logStep(
-                        inline
-                        ? format("%s%s(inline)", indent, modelPath.isEmpty() ? "" : (modelPath + ":"))
-                        : format("%s%s$steps", indent, modelPath.isEmpty() ? "" : (modelPath + ".") )
-                );
-
-                Model
-                        .stepsStream( model.expand( steps ) )
-                        .peek( step -> model.logStep(format("%s -> %s", indent, step)) )
-                        .forEach( model::eval );
-            } finally {
-                stack.get().pop();
-            }
-        }
-    }
 }

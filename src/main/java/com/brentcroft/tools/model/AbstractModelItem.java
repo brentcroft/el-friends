@@ -20,6 +20,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static java.lang.String.format;
 
@@ -293,4 +294,73 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
     public Model getSelf() {
         return this;
     }
+
+    @Override
+    public void steps( String steps )
+    {
+        new Steps( this, steps ).run();
+    }
+
+    @Override
+    public void run() {
+        new Steps(this).run();
+    }
+
+    private static class Steps implements Runnable
+    {
+        private final String steps;
+        private final Model model;
+        private final boolean inline;
+
+        private static final ThreadLocal< Stack< Model > > stack = ThreadLocal.withInitial( Stack::new );
+
+        public Steps( Model model )
+        {
+            this.model = model;
+            this.steps = Optional
+                    .ofNullable( model.get( "$steps" ) )
+                    .map( Object::toString )
+                    .orElseThrow( () -> new IllegalArgumentException( format( "Item [%s] has no value for $steps", model.path() ) ) );
+            this.inline = false;
+        }
+
+        public Steps( Model model, String steps )
+        {
+            this.model = model;
+            this.steps = steps;
+            this.inline = true;
+        }
+
+        public void run()
+        {
+            stack.get().push( model );
+            try
+            {
+                model.setCurrentScope( model.newContainer() );
+                String indent = IntStream
+                        .range( 0, stack.get().size() )
+                        .mapToObj( i -> "  " )
+                        .collect( Collectors.joining() );
+
+                String modelPath = model.path();
+
+                model.logStep(
+                        inline
+                        ? format( "%s%s(inline)", indent, modelPath.isEmpty() ? "" : ( modelPath + ":" ) )
+                        : format( "%s%s$steps", indent, modelPath.isEmpty() ? "" : ( modelPath + "." ) )
+                );
+
+                Model
+                        .stepsStream( model.expand( steps ) )
+                        .peek( step -> model.logStep( format( "%s -> %s", indent, step ) ) )
+                        .forEach( model::eval );
+            }
+            finally
+            {
+                model.dropCurrentScope();
+                stack.get().pop();
+            }
+        }
+    }
+
 }

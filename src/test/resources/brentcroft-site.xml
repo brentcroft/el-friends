@@ -17,10 +17,15 @@
     </model>
     <model key="openShithead">
         <steps key="$steps">
+            $local.delayMillis = 100;
+
             # comment lines are stripped out
-            c:delay(100);
+
+            c:delay( delayMillis );
+
             home.shithead.click;
-            c:delay(100);
+
+            c:delay( delayMillis );
         </steps>
     </model>
 </brentcroft>

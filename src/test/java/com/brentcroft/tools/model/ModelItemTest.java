@@ -25,6 +25,7 @@ public class ModelItemTest
     @Before
     public void setCurrentDirectory() {
         item.setCurrentDirectory( Paths.get( "src/test/resources" ) );
+        item.getStaticModel().clear();
     }
 
     @Test
@@ -223,6 +224,16 @@ public class ModelItemTest
     }
 
     @Test
+    public void usesWhileDoAllInSteps() {
+        item
+                .appendFromJson( "{ digits: [ 'a', 'b', 'c', '3', '5', '6', '7', '8', '9' ] }" );
+        item
+                .steps( "$self.whileDoAll( 'digits.size() > 0', [ 'digits.remove( digits[0] )', 'c:println( digits[0] )' ], 12)" );
+        Object actual = item.eval( "digits" );
+        assertEquals( Collections.emptyList(), actual );
+    }
+
+    @Test
     public void usesModelSteps() {
         item
                 .appendFromJson( "{ '$json': 'nested-01.json' }" )
@@ -266,6 +277,28 @@ public class ModelItemTest
         assertEquals("potato", item.eval( "vegetable" ));
 
         assertEquals("carrot", new ModelItem().eval( "vegetable" ));
+    }
+
+    @Test
+    public void usesStaticScopeInSteps() {
+        item.steps( "$static.vegetable = 'cabbage'" );
+        assertEquals("cabbage", item.eval( "vegetable" ));
+
+        item.eval( "$self.vegetable = 'potato'" );
+        assertEquals("potato", item.eval( "vegetable" ));
+
+        assertEquals("cabbage", new ModelItem().eval( "vegetable" ));
+    }
+
+    @Test
+    public void usesLocalScopeInSteps() {
+        item.steps( "$static.vegetable = 'cabbage'; $local.vegetable = 'chard'" );
+        assertEquals("cabbage", item.eval( "vegetable" ));
+
+        item.steps( "$local.vegetable = 'chard'; $self.vegetable = vegetable" );
+        assertEquals("chard", item.eval( "vegetable" ));
+
+        assertEquals("cabbage", new ModelItem().eval( "vegetable" ));
     }
 
     @Test(expected = TagValidationException.class)

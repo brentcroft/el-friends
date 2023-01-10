@@ -4,17 +4,21 @@ import com.brentcroft.tools.jstl.JstlTemplateManager;
 import com.brentcroft.tools.jstl.MapBindings;
 
 import java.util.Map;
+import java.util.Stack;
 
 public class ModelItem extends AbstractModelItem
 {
     private static final JstlTemplateManager jstl = new JstlTemplateManager();
+    private static final ThreadLocal< Stack<Map<String, Object>> > scope = ThreadLocal.withInitial( Stack::new );
 
     @Override
     public Map< String, Object > newContainer()
     {
         MapBindings bindings = new MapBindings(this);
-        bindings.put( "$self", getSelf() );
+        bindings.put( "$local", bindings );
+        bindings.put( "$self", this );
         bindings.put( "$parent", getParent() );
+        bindings.put( "$static", getStaticModel() );
         return bindings;
     }
 
@@ -27,6 +31,25 @@ public class ModelItem extends AbstractModelItem
     public Evaluator getEvaluator() {
         return jstl::eval;
     }
+
+    @Override
+    public Map<String, Object> getCurrentScope()
+    {
+        return scope.get().empty()
+               ? newContainer()
+               : scope.get().peek();
+    }
+
+    @Override
+    public void setCurrentScope(Map<String, Object> currentScope) {
+        scope.get().push( currentScope );
+    }
+
+    @Override
+    public void dropCurrentScope() {
+        scope.get().pop();
+    }
+
 
     @Override
     public Class< ? extends Model > getModelClass()
