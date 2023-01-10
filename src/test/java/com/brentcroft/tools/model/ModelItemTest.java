@@ -13,6 +13,8 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.junit.Assert.*;
 
@@ -200,6 +202,25 @@ public class ModelItemTest
         assertEquals( Collections.emptyList(), actual );
     }
 
+
+    @Test
+    public void usesWhileDoAll() {
+        item
+                .appendFromJson( "{ digits: [ 'a', 'b', 'c', '3', '5', '6', '7', '8', '9' ] }" );
+
+        Object actual = item
+                .whileDoAll(
+                        "digits.size() > 0",
+                        Stream
+                                .of(
+                                        "digits.remove( digits[0] )",
+                                        "c:println( digits[0] )" )
+                                .collect( Collectors.toList()),
+                        12 )
+                .eval( "digits" );
+
+        assertEquals( Collections.emptyList(), actual );
+    }
 
     @Test
     public void usesModelSteps() {

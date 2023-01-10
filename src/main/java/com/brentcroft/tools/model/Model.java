@@ -5,6 +5,7 @@ import org.xml.sax.InputSource;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Stack;
@@ -50,8 +51,6 @@ public interface Model extends Map< String, Object >
     /**
      * Evaluates a value using the evaluator
      * or else returns null.
-     *
-     * The value is expanded prior to evaluation.
      *
      * @param value the value to be evaluated
      * @return the evaluated value
@@ -280,7 +279,8 @@ public interface Model extends Map< String, Object >
             try {
                 eval( operation );
                 maybeDelay();
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
         if ( whileTest.get() ) {
@@ -288,6 +288,34 @@ public interface Model extends Map< String, Object >
         }
         return this;
     }
+
+    default Model whileDoAll( String booleanTest, List<String> operations, int maxTries ) {
+        int tries = 0;
+        Supplier<Boolean> whileTest = () ->  {
+            try {
+                return (Boolean)eval( booleanTest );
+            } catch (Exception e) {
+                return false;
+            }
+        };
+        while (whileTest.get() && tries < maxTries) {
+            tries++;
+                operations.forEach( operation -> {
+                    try {
+                        eval( operation );
+                        maybeDelay();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                } );
+        }
+        if ( whileTest.get() ) {
+            throw new IllegalArgumentException(format("Ran out of tries (%s) but: %s", tries, booleanTest ));
+        }
+        return this;
+    }
+
+
     default void maybeDelay() {
         try
         {
