@@ -26,8 +26,11 @@ import static java.lang.String.format;
 
 @Getter
 @Setter
-public abstract class AbstractModelItem extends LinkedHashMap<String,Object> implements Model
+public abstract class AbstractModelItem extends LinkedHashMap< String, Object > implements Model
 {
+    public static String OPERATION_DELAY_MILLIS = "$operationDelayMillis";
+    public static String STEP_DELAY_MILLIS = "$stepDelayMillis";
+
     protected static Materializer< Properties > PROPERTIES_XML_MATERIALIZER = new Materializer<>(
             () -> PropertiesRootTag.ROOT,
             Properties::new );
@@ -41,15 +44,16 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
             .enable( JsonReadFeature.ALLOW_TRAILING_COMMA )
             .build();
 
-    static {
+    static
+    {
         JSON_MAPPER.registerModule( new JavaTimeModule() );
         JSON_MAPPER.setSerializationInclusion( JsonInclude.Include.NON_NULL );
         JSON_MAPPER.setSerializationInclusion( JsonInclude.Include.NON_EMPTY );
     }
 
-    private static final ThreadLocal<Stack<Path>> pathStack = ThreadLocal.withInitial( Stack::new );
-
-    private static final Map<String,Object> staticModel = new LinkedHashMap<>();
+    private static final ThreadLocal< Stack< Path > > pathStack = ThreadLocal.withInitial( Stack::new );
+    private static final ThreadLocal< Stack< Steps > > stepsStack = ThreadLocal.withInitial( Stack::new );
+    private static final Map< String, Object > staticModel = new LinkedHashMap<>();
 
     protected static String readFileFully( File file )
     {
@@ -61,35 +65,40 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
         }
         catch ( IOException e )
         {
-            throw new IllegalArgumentException(format("Invalid file: %s", file), e);
+            throw new IllegalArgumentException( format( "Invalid file: %s", file ), e );
         }
     }
 
     private String name = "?";
-    private Map<String, Object> parent;
+    private Map< String, Object > parent;
 
-    public Object get(Object key) {
+    public Object get( Object key )
+    {
         return Optional
                 .ofNullable( super.get( key ) )
-                .map( p -> p instanceof String ? expand((String)p) : p)
+                .map( p -> p instanceof String ? expand( ( String ) p ) : p )
                 .orElseGet( () -> Optional
                         .ofNullable( getParent() )
                         .map( p -> {
-                            Object v = p.get(key);
-                            return  v instanceof String ? expand((String)v) : v;
-                        })
-                        .orElse( staticModel.get( key ) ));
+                            Object v = p.get( key );
+                            return v instanceof String ? expand( ( String ) v ) : v;
+                        } )
+                        .orElse( staticModel.get( key ) ) );
     }
 
-    public Object put(String key, Object value) {
-        if ( value instanceof Model ) {
-            (( Model )value).setParent( this );
+    public Object put( String key, Object value )
+    {
+        if ( value instanceof Model )
+        {
+            ( ( Model ) value ).setParent( this );
         }
-        return super.put(key, value);
+        return super.put( key, value );
     }
 
-    public Object putStatic(String key, Object value) {
-        if (staticModel.containsKey( key )) {
+    public Object putStatic( String key, Object value )
+    {
+        if ( staticModel.containsKey( key ) )
+        {
             return staticModel.get( key );
         }
         Object oldValue = getRoot().put( key, value );
@@ -97,48 +106,55 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
         return oldValue;
     }
 
-    public Map<String,Object> getStaticModel() {
+    public Map< String, Object > getStaticModel()
+    {
         return staticModel;
     }
 
     public Path getCurrentDirectory()
     {
         return Optional
-                .ofNullable( (String)get("$currentDirectory") )
-                .map( Paths::get)
+                .ofNullable( ( String ) get( "$currentDirectory" ) )
+                .map( Paths::get )
                 .orElse( Paths.get( "." ) );
     }
 
     public void setCurrentDirectory( Path directoryPath )
     {
         File directory = directoryPath.toFile();
-        if (!directory.exists()) {
-            throw new IllegalArgumentException(format("Directory does not exist: %s", directory.getPath()));
+        if ( ! directory.exists() )
+        {
+            throw new IllegalArgumentException( format( "Directory does not exist: %s", directory.getPath() ) );
         }
-        if (!directory.isDirectory()) {
-            throw new IllegalArgumentException(format("Not a directory: %s", directory.getPath()));
+        if ( ! directory.isDirectory() )
+        {
+            throw new IllegalArgumentException( format( "Not a directory: %s", directory.getPath() ) );
         }
 
         File cd = getCurrentDirectory().toFile();
-        if ( !cd.equals( directory ) ) {
-            put("$currentDirectory", directoryPath.toString());
+        if ( ! cd.equals( directory ) )
+        {
+            put( "$currentDirectory", directoryPath.toString() );
         }
     }
 
-    public Model newItemFromJson( String jsonText) {
+    public Model newItemFromJson( String jsonText )
+    {
         try
         {
-            return JSON_MAPPER.readValue( jsonText, getModelClass());
+            return JSON_MAPPER.readValue( jsonText, getModelClass() );
         }
         catch ( JsonProcessingException e )
         {
-            throw new IllegalArgumentException(format("JSON text failed to materialize: %s", jsonText), e);
+            throw new IllegalArgumentException( format( "JSON text failed to materialize: %s", jsonText ), e );
         }
     }
 
-    public void introspectEntries() {
-        if (containsKey( "$json" )) {
-            File file = getLocalFile(get("$json").toString());
+    public void introspectEntries()
+    {
+        if ( containsKey( "$json" ) )
+        {
+            File file = getLocalFile( get( "$json" ).toString() );
             putOnFileStack( file.toPath() );
             try
             {
@@ -150,120 +166,139 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
                 pathStack.get().pop();
             }
         }
-        if (containsKey( "$xml" )) {
-            File file = getLocalFile(get("$xml").toString());
+        if ( containsKey( "$xml" ) )
+        {
+            File file = getLocalFile( get( "$xml" ).toString() );
             putOnFileStack( file.toPath() );
             try
             {
                 setCurrentDirectory( file.getParentFile().toPath() );
-                appendFromXml( new InputSource(new FileInputStream( file ) ) );
+                appendFromXml( new InputSource( new FileInputStream( file ) ) );
             }
             catch ( FileNotFoundException e )
             {
-                throw new RuntimeException(e);
+                throw new RuntimeException( e );
             }
             finally
             {
                 pathStack.get().pop();
             }
         }
-        if (containsKey( "$properties" )) {
-            overwritePropertiesFromFile(get("$properties").toString(), false);
+        if ( containsKey( "$properties" ) )
+        {
+            overwritePropertiesFromFile( get( "$properties" ).toString(), false );
         }
-        if (containsKey( "$properties-xml" )) {
-            overwritePropertiesFromFile(get("$properties-xml").toString(), true);
+        if ( containsKey( "$properties-xml" ) )
+        {
+            overwritePropertiesFromFile( get( "$properties-xml" ).toString(), true );
         }
-        if (containsKey( "$onload" )) {
-            eval(get("$onload").toString());
+        if ( containsKey( "$onload" ) )
+        {
+            eval( get( "$onload" ).toString() );
         }
     }
 
-    protected void putOnFileStack( Path path ) {
-        if (!pathStack.get().isEmpty() && pathStack.get().stream()
-                .anyMatch( p -> p.equals(path) )) {
-            throw new CircularityException(format("File: '%s' is already on the stack", path));
+    protected void putOnFileStack( Path path )
+    {
+        if ( ! pathStack.get().isEmpty() && pathStack.get().stream()
+                .anyMatch( p -> p.equals( path ) ) )
+        {
+            throw new CircularityException( format( "File: '%s' is already on the stack", path ) );
         }
         pathStack.get().push( path );
     }
 
-    public File getLocalFile(String filePath) {
+    public File getLocalFile( String filePath )
+    {
         return Optional
-                .of( new File(filePath) )
+                .of( new File( filePath ) )
                 .filter( File::exists )
                 .orElseGet( () -> {
                     File cd = getCurrentDirectory().toFile();
                     return Optional
-                            .of( new File(cd, filePath) )
+                            .of( new File( cd, filePath ) )
                             .filter( File::exists )
-                            .orElseThrow(() -> new IllegalArgumentException(format("Local file does not exist: %s/%s", cd, filePath)))   ;
-                });
+                            .orElseThrow( () -> new IllegalArgumentException( format( "Local file does not exist: %s/%s", cd, filePath ) ) );
+                } );
     }
 
-    public void putAll( Map< ? extends String, ? > item) {
+    public void putAll( Map< ? extends String, ? > item )
+    {
         super.putAll( item
                 .entrySet()
                 .stream()
                 .peek( entry -> {
-                    if ( entry.getValue() instanceof Model ) {
-                        (( Model )entry.getValue()).setParent( this );
+                    if ( entry.getValue() instanceof Model )
+                    {
+                        ( ( Model ) entry.getValue() ).setParent( this );
                     }
                 } )
-                .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) ));
+                .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) ) );
     }
 
-    public void filteredPutAll( Map< ? extends String, ? > item) {
+    public void filteredPutAll( Map< ? extends String, ? > item )
+    {
         putAll( item
                 .entrySet()
                 .stream()
-//                .filter( entry -> ! entry.getKey().startsWith( "$" ))
-                .filter( entry -> ! entry.getKey().startsWith( "$onload" ))
-                .filter( entry -> ! entry.getKey().startsWith( "$json" ))
-                .filter( entry -> ! entry.getKey().startsWith( "$xml" ))
-                .filter( entry -> ! entry.getKey().startsWith( "$properties" ))
-                .filter( entry -> ! entry.getKey().startsWith( "$properties-xml" ))
-                .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) ));
+                .filter( entry -> ! entry.getKey().startsWith( "$onload" ) )
+                .filter( entry -> ! entry.getKey().startsWith( "$json" ) )
+                .filter( entry -> ! entry.getKey().startsWith( "$xml" ) )
+                .filter( entry -> ! entry.getKey().startsWith( "$properties" ) )
+                .filter( entry -> ! entry.getKey().startsWith( "$properties-xml" ) )
+                .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) ) );
     }
 
     @SuppressWarnings( "unchecked" )
     private void overwritePropertiesFromFile( String propertiesFilePath, boolean isXml )
     {
-        File file = new File(propertiesFilePath);
-        if (!file.exists()) {
+        File file = new File( propertiesFilePath );
+        if ( ! file.exists() )
+        {
             file = new File( getCurrentDirectory().toFile(), propertiesFilePath );
         }
 
         Properties p;
-        try (FileInputStream fis = new FileInputStream( file )) {
-            if (isXml) {
-                p = PROPERTIES_XML_MATERIALIZER.apply(new InputSource(fis));
-            } else {
+        try ( FileInputStream fis = new FileInputStream( file ) )
+        {
+            if ( isXml )
+            {
+                p = PROPERTIES_XML_MATERIALIZER.apply( new InputSource( fis ) );
+            }
+            else
+            {
                 p = new Properties();
                 p.load( fis );
             }
-        } catch (Exception e) {
-            throw new IllegalArgumentException(format( "Properties file not found: %s",file ), e);
         }
-        Function<String,String> uptoAnyPlaceHolder = value -> {
-                int phi = value.indexOf("{0}");
-                if (phi > -1) {
-                    return value.substring( 0, phi );
-                }
-                return value;
+        catch ( Exception e )
+        {
+            throw new IllegalArgumentException( format( "Properties file not found: %s", file ), e );
+        }
+        Function< String, String > uptoAnyPlaceHolder = value -> {
+            int phi = value.indexOf( "{0}" );
+            if ( phi > - 1 )
+            {
+                return value.substring( 0, phi );
+            }
+            return value;
         };
-        p.forEach( (k,v) -> {
+        p.forEach( ( k, v ) -> {
             final String ref = k.toString().trim();
-            final String value = uptoAnyPlaceHolder.apply(v.toString().trim());
+            final String value = uptoAnyPlaceHolder.apply( v.toString().trim() );
             final String[] segs = ref.split( "\\s*\\.\\s*" );
-            Map<String,Object> target = this;
-            for (int i = 0, n = segs.length; i< n; i++) {
-                final Object segValue = target.get( segs[i] );
-                if (segValue instanceof Map) {
-                    target = (Map<String,Object>)segValue;
+            Map< String, Object > target = this;
+            for ( int i = 0, n = segs.length; i < n; i++ )
+            {
+                final Object segValue = target.get( segs[ i ] );
+                if ( segValue instanceof Map )
+                {
+                    target = ( Map< String, Object > ) segValue;
                     continue;
                 }
                 final String key = Arrays
                         .stream( segs, i, n )
-                        .collect( Collectors.joining("."));
+                        .collect( Collectors.joining( "." ) );
 
                 target.put( key, value );
             }
@@ -271,7 +306,7 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
     }
 
     @Override
-    public String  toJson()
+    public String toJson()
     {
         try
         {
@@ -281,86 +316,113 @@ public abstract class AbstractModelItem extends LinkedHashMap<String,Object> imp
         }
         catch ( JsonProcessingException e )
         {
-            throw new IllegalArgumentException(format("ModelItem at path: %s", path()), e);
+            throw new IllegalArgumentException( format( "ModelItem at path: %s", path() ), e );
         }
     }
 
     @Override
-    public String toString() {
+    public String toString()
+    {
         return path();
     }
 
     @Override
-    public Model getSelf() {
+    public Model getSelf()
+    {
         return this;
     }
 
     @Override
     public void steps( String steps )
     {
-        new Steps( this, steps ).run();
+        new Steps( steps ).run();
     }
 
     @Override
-    public void run() {
-        new Steps(this).run();
+    public void run()
+    {
+        new Steps().run();
     }
 
-    private static class Steps implements Runnable
+    public void maybeDelay() {
+        try
+        {
+            long delay = (long) getOrDefault( OPERATION_DELAY_MILLIS, 100L );
+            Thread.sleep( delay );
+        }
+        catch ( InterruptedException e )
+        {
+            e.printStackTrace();
+        }
+    }
+
+    private void stepDelay()
+    {
+        try
+        {
+            long delay = (long) getOrDefault( STEP_DELAY_MILLIS, 10L );
+            Thread.sleep( delay );
+        }
+        catch ( InterruptedException e )
+        {
+            e.printStackTrace();
+        }
+    }
+
+    class Steps implements Runnable
     {
         private final String steps;
-        private final Model model;
         private final boolean inline;
 
-        private static final ThreadLocal< Stack< Model > > stack = ThreadLocal.withInitial( Stack::new );
-
-        public Steps( Model model )
+        public Steps(  )
         {
-            this.model = model;
             this.steps = Optional
-                    .ofNullable( model.get( "$steps" ) )
+                    .ofNullable( get( "$steps" ) )
                     .map( Object::toString )
-                    .orElseThrow( () -> new IllegalArgumentException( format( "Item [%s] has no value for $steps", model.path() ) ) );
+                    .orElseThrow( () -> new IllegalArgumentException( format( "Item [%s] has no value for $steps", path() ) ) );
             this.inline = false;
         }
 
-        public Steps( Model model, String steps )
+        public Steps( String steps )
         {
-            this.model = model;
             this.steps = steps;
             this.inline = true;
         }
 
+
         public void run()
         {
-            stack.get().push( model );
+            stepsStack.get().push( this );
+
             try
             {
-                model.setCurrentScope( model.newContainer() );
+                setCurrentScope( newContainer() );
                 String indent = IntStream
-                        .range( 0, stack.get().size() )
+                        .range( 0, stepsStack.get().size() )
                         .mapToObj( i -> "  " )
                         .collect( Collectors.joining() );
 
-                String modelPath = model.path();
+                String modelPath = path();
 
-                model.logStep(
+                logStep(
                         inline
                         ? format( "%s%s(inline)", indent, modelPath.isEmpty() ? "" : ( modelPath + ":" ) )
                         : format( "%s%s$steps", indent, modelPath.isEmpty() ? "" : ( modelPath + "." ) )
                 );
 
                 Model
-                        .stepsStream( model.expand( steps ) )
-                        .peek( step -> model.logStep( format( "%s -> %s", indent, step ) ) )
-                        .forEach( model::eval );
+                        .stepsStream( expand( steps ) )
+                        .forEach( step -> {
+                            logStep( format( "%s -> %s", indent, step ) );
+                            eval( step );
+                            stepDelay();
+                        } );
             }
             finally
             {
-                model.dropCurrentScope();
-                stack.get().pop();
+                dropCurrentScope();
+                stepsStack.get().pop();
             }
         }
     }
-
 }

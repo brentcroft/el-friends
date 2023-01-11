@@ -9,12 +9,19 @@ import java.util.Stack;
 public class ModelItem extends AbstractModelItem
 {
     private static final JstlTemplateManager jstl = new JstlTemplateManager();
-    private static final ThreadLocal< Stack<Map<String, Object>> > scope = ThreadLocal.withInitial( Stack::new );
+    private static final ThreadLocal< Stack<Map<String, Object>> > scopeStack = ThreadLocal.withInitial( Stack::new );
+
+    @Override
+    public Class< ? extends Model > getModelClass()
+    {
+        return ModelItem.class;
+    }
 
     @Override
     public Map< String, Object > newContainer()
     {
         MapBindings bindings = new MapBindings(this);
+        //
         bindings.put( "$local", bindings );
         bindings.put( "$self", this );
         bindings.put( "$parent", getParent() );
@@ -35,25 +42,20 @@ public class ModelItem extends AbstractModelItem
     @Override
     public Map<String, Object> getCurrentScope()
     {
-        return scope.get().empty()
+        return scopeStack.get().empty()
                ? newContainer()
-               : scope.get().peek();
+               : scopeStack.get().peek();
     }
 
     @Override
     public void setCurrentScope(Map<String, Object> currentScope) {
-        scope.get().push( currentScope );
+        scopeStack.get().push( currentScope );
     }
 
     @Override
     public void dropCurrentScope() {
-        scope.get().pop();
-    }
-
-
-    @Override
-    public Class< ? extends Model > getModelClass()
-    {
-        return ModelItem.class;
+        if (! scopeStack.get().empty()) {
+            scopeStack.get().pop();
+        }
     }
 }

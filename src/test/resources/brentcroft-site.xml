@@ -1,6 +1,10 @@
 <brentcroft
         key="brentcroft"
         json="nested-01.json">
+
+    <long key="$operationDelayMillis">100</long>
+    <long key="$stepDelayMillis">10</long>
+
     <double key="amount">234</double>
     <model key="totals">
         <boolean key="valid">true</boolean>

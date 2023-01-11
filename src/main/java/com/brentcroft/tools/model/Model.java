@@ -308,24 +308,13 @@ public interface Model extends Map< String, Object >
                     }
                 } );
         }
-        if ( whileTest.get() ) {
+        if ( tries >= maxTries ) {
             throw new IllegalArgumentException(format("Ran out of tries (%s) but: %s", tries, booleanTest ));
         }
         return this;
     }
 
-
-    default void maybeDelay() {
-        try
-        {
-            long delay = (long) getOrDefault( "$delay", 100L );
-            Thread.sleep( delay );
-        }
-        catch ( InterruptedException e )
-        {
-            e.printStackTrace();
-        }
-    }
+    void maybeDelay();
     interface Expander extends BiFunction<String, Map<String, Object>, String> {}
     interface Evaluator extends BiFunction<String, Map<String, Object>, Object> {}
 }
