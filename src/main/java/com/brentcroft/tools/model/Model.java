@@ -5,9 +5,7 @@ import org.xml.sax.InputSource;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -19,7 +17,7 @@ import static java.util.Objects.nonNull;
 public interface Model extends Map< String, Object >
 {
 
-    Map<String, Object> newContainer();
+    //Map<String, Object> newContainer();
 
     Expander getExpander();
     Evaluator getEvaluator();
@@ -69,11 +67,9 @@ public interface Model extends Map< String, Object >
                 .orElse( null );
     }
 
-    default Map<String, Object> getCurrentScope()
-    {
-        return newContainer();
-    }
-    void setCurrentScope(Map<String, Object> scope);
+    Map< String, Object > newContainer();
+    Map<String, Object> getCurrentScope();
+    void newCurrentScope();
     void dropCurrentScope();
 
     static Stream<String> stepsStream(String value) {
@@ -264,26 +260,46 @@ public interface Model extends Map< String, Object >
         }
     }
 
-    default Model whileDo( String booleanTest, String operation, int maxTries ) {
-        int tries = 0;
+    default Model whileDo( String booleanTest, Object operation, int maxTries ) {
+        int[] tries = {0};
+        List<String> ops = operation instanceof Collection
+                           ? ((Collection<?>)operation)
+                                   .stream()
+                                   .filter( Objects::nonNull )
+                                   .map( Object::toString )
+                                   .collect( Collectors.toList())
+                           : Collections.singletonList( operation.toString() );
+
         Supplier<Boolean> whileTest = () ->  {
             try {
-                return (Boolean)eval( booleanTest );
+                boolean test = (Boolean)eval( expand( booleanTest ) );
+                logStep( format( "whileDo [%d]: test: '%s' == %s", tries[0], booleanTest, test ) );
+                return test;
             } catch (Exception e) {
-                return false;
+                logStep( format(
+                        "whileDo: test [%d: %s]; [%s] %s",
+                        tries[0], booleanTest,
+                        e.getClass().getSimpleName(),
+                        e.getMessage() ) );
+                return true;
             }
         };
-        while (whileTest.get() && tries < maxTries) {
-            tries++;
-            try {
-                eval( operation );
-                maybeDelay();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+        while (whileTest.get() && tries[0] < maxTries) {
+            tries[0]++;
+            ops.forEach( op -> {
+                try {
+                    eval( expand( op ) );
+                } catch (Exception e) {
+                    logStep( format(
+                            "whileDo: operation [%d: %s]; [%s] %s",
+                            tries[0], op,
+                            e.getClass().getSimpleName(),
+                            e.getMessage() ) );
+                }
+            } );
         }
-        if ( whileTest.get() ) {
-            throw new IllegalArgumentException(format("Ran out of tries (%s) but: %s", tries, booleanTest ));
+        if ( tries[0] >= maxTries ) {
+            throw new IllegalArgumentException(format("Ran out of tries (%s) but: %s", tries[0], booleanTest ));
         }
         return this;
     }
@@ -299,14 +315,13 @@ public interface Model extends Map< String, Object >
         };
         while (whileTest.get() && tries < maxTries) {
             tries++;
-                operations.forEach( operation -> {
-                    try {
-                        eval( operation );
-                        maybeDelay();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                } );
+            operations.forEach( operation -> {
+                try {
+                    eval( operation );
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            } );
         }
         if ( tries >= maxTries ) {
             throw new IllegalArgumentException(format("Ran out of tries (%s) but: %s", tries, booleanTest ));

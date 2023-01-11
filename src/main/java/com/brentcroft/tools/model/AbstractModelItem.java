@@ -396,7 +396,7 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
 
             try
             {
-                setCurrentScope( newContainer() );
+                newCurrentScope();
                 String indent = IntStream
                         .range( 0, stepsStack.get().size() )
                         .mapToObj( i -> "  " )

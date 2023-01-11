@@ -17,7 +17,6 @@ public class ModelItem extends AbstractModelItem
         return ModelItem.class;
     }
 
-    @Override
     public Map< String, Object > newContainer()
     {
         MapBindings bindings = new MapBindings(this);
@@ -44,12 +43,13 @@ public class ModelItem extends AbstractModelItem
     {
         return scopeStack.get().empty()
                ? newContainer()
-               : scopeStack.get().peek();
+               : ((MapBindings)newContainer())
+                       .withParent( scopeStack.get().peek() );
     }
 
     @Override
-    public void setCurrentScope(Map<String, Object> currentScope) {
-        scopeStack.get().push( currentScope );
+    public void newCurrentScope() {
+        scopeStack.get().push( getCurrentScope() );
     }
 
     @Override
