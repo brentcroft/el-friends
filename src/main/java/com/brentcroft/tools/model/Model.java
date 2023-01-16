@@ -67,7 +67,7 @@ public interface Model extends Map< String, Object >
                 .orElse( null );
     }
 
-    Map< String, Object > newContainer();
+    Map< String, Object > newContainer(Map<String, Object> scope);
     Map<String, Object> getCurrentScope();
     void newCurrentScope();
     void dropCurrentScope();
@@ -305,28 +305,7 @@ public interface Model extends Map< String, Object >
     }
 
     default Model whileDoAll( String booleanTest, List<String> operations, int maxTries ) {
-        int tries = 0;
-        Supplier<Boolean> whileTest = () ->  {
-            try {
-                return (Boolean)eval( booleanTest );
-            } catch (Exception e) {
-                return false;
-            }
-        };
-        while (whileTest.get() && tries < maxTries) {
-            tries++;
-            operations.forEach( operation -> {
-                try {
-                    eval( operation );
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            } );
-        }
-        if ( tries >= maxTries ) {
-            throw new IllegalArgumentException(format("Ran out of tries (%s) but: %s", tries, booleanTest ));
-        }
-        return this;
+        return whileDo( booleanTest, operations, maxTries);
     }
 
     void maybeDelay();

@@ -23,21 +23,7 @@ public enum ModelRootTag implements FlatTag< Model >
     DOCUMENT_ELEMENT( "*",
             ( model, event ) -> event.asStringMap().forEach( (k,v) -> model.put( "$" + k.trim(), v.trim() ) ),
             ( model, text) -> model.introspectEntries(),
-            ModelTag.MODEL,
-            EntryTag.EL,
-            EntryTag.JSON,
-            EntryTag.ENTRY,
-            EntryTag.TEXT,
-            EntryTag.STEPS,
-            EntryTag.DATE,
-            EntryTag.DATETIME,
-            EntryTag.DURATION,
-            EntryTag.INTEGER,
-            EntryTag.LONG,
-            EntryTag.DOUBLE,
-            EntryTag.BOOLEAN,
-            EntryTag.BIG_DECIMAL,
-            EntryTag.BIG_INTEGER
+            ModelTag.MODEL.getChildren()
             ),
     DOCUMENT_ROOT( "", DOCUMENT_ELEMENT );
 
@@ -70,29 +56,8 @@ enum ModelTag implements StepTag< Model, Model >
             "model",
             ( model, event ) -> event.asStringMap().forEach( (k,v) -> model.put( "$" + k.trim(), v.trim() ) ),
             ( model, text) -> model.introspectEntries()
-    ) {
-        // dynamic method allows self-reference
-        public Tag< ? super Model, ? >[] getChildren()
-        {
-            return Tag.tags(
-                    MODEL,
-                    EntryTag.EL,
-                    EntryTag.JSON,
-                    EntryTag.ENTRY,
-                    EntryTag.TEXT,
-                    EntryTag.STEPS,
-                    EntryTag.DATE,
-                    EntryTag.DATETIME,
-                    EntryTag.DURATION,
-                    EntryTag.INTEGER,
-                    EntryTag.LONG,
-                    EntryTag.DOUBLE,
-                    EntryTag.BOOLEAN,
-                    EntryTag.BIG_DECIMAL,
-                    EntryTag.BIG_INTEGER
-            );
-        }
-    };
+    ),
+    SHADOW("shadow");
 
     private final boolean multiple = true;
     private final boolean choice = true;
@@ -106,15 +71,43 @@ enum ModelTag implements StepTag< Model, Model >
         this.opener = Opener.flatOpener( opener );
         this.closer = Closer.flatCloser( closer );
     }
+    ModelTag(String tag) {
+        this(tag, null, null);
+    }
 
     @Override
     public Model getItem( Model model, OpenEvent event )
     {
         Model child = model.newItem();
-        child.setName( event.getAttribute( "key" ) );
+        child.setName( SHADOW.equals(event.getTag())
+                ? "$shadow"
+                : event.getAttribute( "key" ) );
         child.setParent( model );
         model.put( child.getName(), child );
         return child;
+    }
+
+    // dynamic method allows self-reference
+    public Tag< ? super Model, ? >[] getChildren()
+    {
+        return Tag.tags(
+                MODEL,
+                SHADOW,
+                EntryTag.EL,
+                EntryTag.JSON,
+                EntryTag.ENTRY,
+                EntryTag.TEXT,
+                EntryTag.STEPS,
+                EntryTag.DATE,
+                EntryTag.DATETIME,
+                EntryTag.DURATION,
+                EntryTag.INTEGER,
+                EntryTag.LONG,
+                EntryTag.DOUBLE,
+                EntryTag.BOOLEAN,
+                EntryTag.BIG_DECIMAL,
+                EntryTag.BIG_INTEGER
+        );
     }
 }
 

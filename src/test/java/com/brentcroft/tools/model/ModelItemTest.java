@@ -31,7 +31,6 @@ public class ModelItemTest
 
     @Test
     public void createsEmptyModelItemFromJson() {
-        new ModelItem().getStaticModel().clear();
         Model emptyModel = new ModelItem().appendFromJson( "{}" );
         assertEquals("{}", emptyModel.toJson().replaceAll( " ", "" ));
     }
@@ -135,6 +134,8 @@ public class ModelItemTest
         List<?> jsonData = (List<?>)item.eval( "totals.jsonData" );
         int[] counter2 = {1};
         jsonData.forEach( datum -> assertEquals( counter2[0]++, datum ) );
+
+        assertEquals("RED", item.eval( "angular.$shadow.color" ));
     }
 
     @Test

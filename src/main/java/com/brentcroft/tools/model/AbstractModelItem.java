@@ -95,6 +95,13 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
         return super.put( key, value );
     }
 
+    /**
+     * Bypasses checking for Models and calls super.put(key, value).
+     */
+    public Object set(String key, Object value) {
+        return super.put( key, value );
+    }
+
     public Object putStatic( String key, Object value )
     {
         if ( staticModel.containsKey( key ) )
@@ -356,19 +363,6 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
         }
     }
 
-    private void stepDelay()
-    {
-        try
-        {
-            long delay = (long) getOrDefault( STEP_DELAY_MILLIS, 10L );
-            Thread.sleep( delay );
-        }
-        catch ( InterruptedException e )
-        {
-            e.printStackTrace();
-        }
-    }
-
     class Steps implements Runnable
     {
         private final String steps;
@@ -415,7 +409,6 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
                         .forEach( step -> {
                             logStep( format( "%s -> %s", indent, step ) );
                             eval( step );
-                            stepDelay();
                         } );
             }
             finally
