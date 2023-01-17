@@ -29,6 +29,7 @@ public interface Model extends Map< String, Object >
     Object set(String key, Object value);
     Object putStatic( String key, Object value);
     Map<String,Object> getStaticModel();
+    Stack<Map<String, Object>> getScopeStack();
 
     /**
      * Expands a value using the expander
@@ -39,7 +40,7 @@ public interface Model extends Map< String, Object >
      */
     default String expand( String value )
     {
-        final Map<String, Object> bindings = getCurrentScope();
+        final Map<String, Object> bindings = newContainer();
         return Optional
                 .ofNullable(getExpander())
                 .map(exp -> exp.apply( value, bindings ) )
@@ -55,7 +56,8 @@ public interface Model extends Map< String, Object >
      */
     default Object eval( String value )
     {
-        final Map<String, Object> bindings = getCurrentScope();
+        final Map<String, Object> bindings = newContainer();
+
         return Optional
                 .ofNullable( getEvaluator() )
                 .map( evaluator -> {
@@ -68,10 +70,7 @@ public interface Model extends Map< String, Object >
                 .orElse( null );
     }
 
-    Map< String, Object > newContainer(Map<String, Object> scope);
-    Map<String, Object> getCurrentScope();
-    void newCurrentScope();
-    void dropCurrentScope();
+    Map< String, Object > newContainer();
 
     static Stream<String> stepsStream(String value) {
         String uncommented = Stream

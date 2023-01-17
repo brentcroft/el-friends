@@ -9,7 +9,6 @@ import java.util.Stack;
 public class ModelItem extends AbstractModelItem
 {
     private static final JstlTemplateManager jstl = new JstlTemplateManager();
-    private static final ThreadLocal< Stack<Map<String, Object>> > scopeStack = ThreadLocal.withInitial( Stack::new );
 
     @Override
     public Class< ? extends Model > getModelClass()
@@ -17,11 +16,10 @@ public class ModelItem extends AbstractModelItem
         return ModelItem.class;
     }
 
-    public Map< String, Object > newContainer(Map< String, Object > scope)
+    public Map< String, Object > newContainer()
     {
-        MapBindings bindings = new MapBindings(scope);
-        //
-        bindings.put( "$local", bindings );
+        MapBindings bindings = new MapBindings(this);
+        bindings.put( "$local", getScopeStack().peek() );
         bindings.put( "$self", this );
         bindings.put( "$parent", getParent() );
         bindings.put( "$static", getStaticModel() );
@@ -36,27 +34,5 @@ public class ModelItem extends AbstractModelItem
     @Override
     public Evaluator getEvaluator() {
         return jstl::eval;
-    }
-
-    @Override
-    public Map<String, Object> getCurrentScope()
-    {
-        return newContainer(this);
-//        return scopeStack.get().empty()
-//               ? newContainer()
-//               : ((MapBindings)newContainer())
-//                       .withParent( scopeStack.get().peek() );
-    }
-
-    @Override
-    public void newCurrentScope() {
-        scopeStack.get().push( getCurrentScope() );
-    }
-
-    @Override
-    public void dropCurrentScope() {
-        if (! scopeStack.get().empty()) {
-            scopeStack.get().pop();
-        }
     }
 }

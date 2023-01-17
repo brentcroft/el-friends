@@ -44,16 +44,25 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
             .enable( JsonReadFeature.ALLOW_TRAILING_COMMA )
             .build();
 
+
+    private static final ThreadLocal< Stack< Path > > pathStack = ThreadLocal.withInitial( Stack::new );
+    private static final ThreadLocal< Stack< Steps > > stepsStack = ThreadLocal.withInitial( Stack::new );
+    private static final Map< String, Object > staticModel = new LinkedHashMap<>();
+    private static final ThreadLocal< Stack<Map<String, Object>> > scopeStack = ThreadLocal.withInitial( Stack::new );
+
+
     static
     {
         JSON_MAPPER.registerModule( new JavaTimeModule() );
         JSON_MAPPER.setSerializationInclusion( JsonInclude.Include.NON_NULL );
         JSON_MAPPER.setSerializationInclusion( JsonInclude.Include.NON_EMPTY );
+
+        scopeStack.get().push( new HashMap<>() );
     }
 
-    private static final ThreadLocal< Stack< Path > > pathStack = ThreadLocal.withInitial( Stack::new );
-    private static final ThreadLocal< Stack< Steps > > stepsStack = ThreadLocal.withInitial( Stack::new );
-    private static final Map< String, Object > staticModel = new LinkedHashMap<>();
+    public Stack<Map<String, Object>> getScopeStack() {
+        return scopeStack.get();
+    }
 
     protected static String readFileFully( File file )
     {
@@ -72,18 +81,35 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
     private String name = "?";
     private Map< String, Object > parent;
 
+    /**
+     * First checks the scope stack,
+     *  then checks the current item,
+     *  then checks the parent
+     *  and finally checks the static model.
+     *
+     * @param key the registered name of the object
+     * @return the object registered with the key
+     */
     public Object get( Object key )
     {
-        return Optional
-                .ofNullable( super.get( key ) )
-                .map( p -> p instanceof String ? expand( ( String ) p ) : p )
-                .orElseGet( () -> Optional
-                        .ofNullable( getParent() )
-                        .map( p -> {
-                            Object v = p.get( key );
-                            return v instanceof String ? expand( ( String ) v ) : v;
-                        } )
-                        .orElse( staticModel.get( key ) ) );
+        // reverse order?
+        return scopeStack
+            .get()
+            .stream()
+            .filter( scope -> scope.containsKey( key ) )
+            .map( scope -> scope.get( key ) )
+            .findFirst()
+            .orElseGet( () -> Optional
+                    .ofNullable( super.get( key ) )
+                    .map( p -> p instanceof String ? expand( ( String ) p ) : p )
+                    .orElseGet( () -> Optional
+                    .ofNullable( getParent() )
+                    .map( p -> {
+                        Object v = p.get( key );
+                        return v instanceof String ? expand( ( String ) v ) : v;
+                    } )
+                    .orElse( staticModel.get( key ) ) )
+                );
     }
 
     public Object put( String key, Object value )
@@ -387,10 +413,10 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
         public void run()
         {
             stepsStack.get().push( this );
+            scopeStack.get().push( new HashMap<>() );
 
             try
             {
-                newCurrentScope();
                 String indent = IntStream
                         .range( 0, stepsStack.get().size() )
                         .mapToObj( i -> "  " )
@@ -413,7 +439,7 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
             }
             finally
             {
-                dropCurrentScope();
+                scopeStack.get().pop();
                 stepsStack.get().pop();
             }
         }
