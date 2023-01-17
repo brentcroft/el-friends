@@ -108,7 +108,7 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
         {
             return staticModel.get( key );
         }
-        Object oldValue = getRoot().put( key, value );
+        Object oldValue = getRoot().set( key, value );
         staticModel.put( key, get( key ) );
         return oldValue;
     }
@@ -371,9 +371,9 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
         public Steps(  )
         {
             this.steps = Optional
-                    .ofNullable( get( "$steps" ) )
+                    .ofNullable( get( "$run" ) )
                     .map( Object::toString )
-                    .orElseThrow( () -> new IllegalArgumentException( format( "Item [%s] has no value for $steps", path() ) ) );
+                    .orElseThrow( () -> new IllegalArgumentException( format( "Item [%s] has no value for $run", path() ) ) );
             this.inline = false;
         }
 
@@ -401,7 +401,7 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
                 logStep(
                         inline
                         ? format( "%s%s(inline)", indent, modelPath.isEmpty() ? "" : ( modelPath + ":" ) )
-                        : format( "%s%s$steps", indent, modelPath.isEmpty() ? "" : ( modelPath + "." ) )
+                        : format( "%s%s$run", indent, modelPath.isEmpty() ? "" : ( modelPath + "." ) )
                 );
 
                 Model

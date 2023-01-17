@@ -26,6 +26,7 @@ public interface Model extends Map< String, Object >
         System.out.println( text );
     }
 
+    Object set(String key, Object value);
     Object putStatic( String key, Object value);
     Map<String,Object> getStaticModel();
 

@@ -148,7 +148,7 @@ public class ModelItemTest
     @Test
     public void appliesJsonOnload()
     {
-        item.appendFromJson( "{ '$steps': '$self.fred = \"bloggs\"', '$onload': '$self.run()' }" );
+        item.appendFromJson( "{ '$run': '$self.fred = \"bloggs\"', '$onload': '$self.run()' }" );
         assertEquals("bloggs", item.eval( "fred" ));
     }
 
@@ -239,7 +239,7 @@ public class ModelItemTest
     public void usesModelSteps() {
         item
                 .appendFromJson( "{ '$json': 'nested-01.json' }" )
-                .insertFromJson( "incrementer","{ '$steps': '$parent.level = level + 1' }" );
+                .insertFromJson( "incrementer","{ '$run': '$parent.level = level + 1' }" );
 
         item.setName( "root" );
 
@@ -254,7 +254,7 @@ public class ModelItemTest
     public void usesModelStepsInline() {
         item
                 .appendFromJson( "{ '$json': 'nested-01.json' }" )
-                .insertFromJson( "incrementer","{ '$steps': '$parent.level = level + 1' }" );
+                .insertFromJson( "incrementer","{ '$run': '$parent.level = level + 1' }" );
 
         item.setName( "root" );
         assertEquals(3, item.get( "level" ));

@@ -20,7 +20,7 @@
         </model>
     </model>
     <model key="openShithead">
-        <steps key="$steps">
+        <steps key="$run">
             $local.delayMillis = 100;
 
             # comment lines are stripped out
