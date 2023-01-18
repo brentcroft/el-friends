@@ -20,7 +20,7 @@ import static java.util.Objects.isNull;
 public class InteractiveFrame extends JDialog implements ActionListener, TreeSelectionListener
 {
     private final Model model;
-    private JTree modelTree;
+    private final JTree modelTree;
     private final JTextPane stepsText;
     private final JTextPane resultText;
     private final JButton evalButton;
@@ -93,33 +93,36 @@ public class InteractiveFrame extends JDialog implements ActionListener, TreeSel
     public static class ModelNode {
         private final String key;
         private final Object model;
+
         public String toString() {
             return model instanceof Map
                     ?  format("%s", key)
                    :  format("%s: %s", key, model);
         }
+
         public boolean isMap() {
             return model instanceof Map;
         }
+
+        @SuppressWarnings( "unchecked" )
         public Map<String, ?> getMap() {
             return (Map<String, ?>)model;
         }
     }
 
+    @SuppressWarnings( "unchecked" )
     private void buildChildNodes( Map<String, ?> model, DefaultMutableTreeNode parent, IdentityHashMap<Object,Object> alreadySeen) {
+        if (alreadySeen.containsKey( model )) {
+            return;
+        } else {
+            alreadySeen.put( model, null );
+        }
         model.forEach( (key, value) -> {
-            if (alreadySeen.containsKey( value ))
-            {
-                DefaultMutableTreeNode node = new DefaultMutableTreeNode("duplicate: " + key);
-                parent.add( node );
-            } else {
-                DefaultMutableTreeNode node = new DefaultMutableTreeNode(new ModelNode(key, value));
-                if (value instanceof Map ) {
-                    buildChildNodes( ( Map< String, ? > )value, node, alreadySeen );
-                }
-                parent.add( node );
+            DefaultMutableTreeNode node = new DefaultMutableTreeNode(new ModelNode(key, value));
+            if (value instanceof Map ) {
+                buildChildNodes( ( Map< String, ? > )value, node, alreadySeen );
             }
-            alreadySeen.put( value, key );
+            parent.add( node );
         } );
     }
 
