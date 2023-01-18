@@ -81,8 +81,16 @@ public interface Model extends Map< String, Object >
         return Stream
                 .of(uncommented.split( "\\s*[;]+\\s*" ));
     }
-    void run();
+
     void steps(String steps);
+
+    default void call(String key) {
+        steps( (String) get(key) );
+    }
+
+    default void run(){
+        call( "$run" );
+    }
 
     String toJson();
 
