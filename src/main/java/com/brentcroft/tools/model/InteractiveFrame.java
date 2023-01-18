@@ -106,7 +106,7 @@ public class InteractiveFrame extends JDialog implements ActionListener, TreeSel
         }
     }
 
-    private void buildChildNodes( Map<String, ?> model, DefaultMutableTreeNode parent, IdentityHashMap<?,?> alreadySeen) {
+    private void buildChildNodes( Map<String, ?> model, DefaultMutableTreeNode parent, IdentityHashMap<Object,Object> alreadySeen) {
         model.forEach( (key, value) -> {
             if (alreadySeen.containsKey( value ))
             {
@@ -119,6 +119,7 @@ public class InteractiveFrame extends JDialog implements ActionListener, TreeSel
                 }
                 parent.add( node );
             }
+            alreadySeen.put( value, key );
         } );
     }
 
