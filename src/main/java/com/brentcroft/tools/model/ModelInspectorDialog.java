@@ -17,7 +17,7 @@ import java.util.Map;
 import static java.lang.String.format;
 import static java.util.Objects.isNull;
 
-public class InteractiveFrame extends JDialog implements ActionListener, TreeSelectionListener
+public class ModelInspectorDialog extends JDialog implements ActionListener, TreeSelectionListener
 {
     private final Model model;
     private final JTree modelTree;
@@ -25,9 +25,33 @@ public class InteractiveFrame extends JDialog implements ActionListener, TreeSel
     private final JTextPane resultText;
     private final JButton evalButton;
 
-    public InteractiveFrame(Model model) {
+    static {
+        String lookAndFeel = UIManager.getSystemLookAndFeelClassName();
+        try
+        {
+            UIManager.setLookAndFeel(lookAndFeel);
+        }
+        catch ( ClassNotFoundException e )
+        {
+            e.printStackTrace();
+        }
+        catch ( InstantiationException e )
+        {
+            e.printStackTrace();
+        }
+        catch ( IllegalAccessException e )
+        {
+            e.printStackTrace();
+        }
+        catch ( UnsupportedLookAndFeelException e )
+        {
+            e.printStackTrace();
+        }
+    }
+
+    public ModelInspectorDialog( Model model) {
         this.model = model;
-        setTitle( "Interactive Steps" );
+        setTitle( "Model Inspector" );
         setBounds( 300, 90, 900, 600 );
         setDefaultCloseOperation( DISPOSE_ON_CLOSE );
         setResizable( true );
@@ -42,24 +66,26 @@ public class InteractiveFrame extends JDialog implements ActionListener, TreeSel
         modelTree.addTreeSelectionListener(this);
 
         JSplitPane topPanel = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        topPanel.setTopComponent( modelTree );
+        topPanel.setTopComponent( new JScrollPane(modelTree) );
 
-        JLabel elLabel = new JLabel("EL:");
+        JLabel elLabel = new JLabel("EL expression:");
         stepsText = new JTextPane();
         JLabel resultLabel = new JLabel("Result:");
         resultText = new JTextPane();
 
         evalButton = new JButton("Eval");
         evalButton.addActionListener( this );
+        JPanel toolbarPanel = new JPanel(new BorderLayout());
+        toolbarPanel.add( evalButton, BorderLayout.EAST );
 
         JPanel stepsPanel = new JPanel(new BorderLayout());
         stepsPanel.add( elLabel, BorderLayout.NORTH );
-        stepsPanel.add( stepsText, BorderLayout.CENTER );
-        stepsPanel.add(evalButton, BorderLayout.SOUTH) ;
+        stepsPanel.add( new JScrollPane(stepsText), BorderLayout.CENTER );
+        stepsPanel.add(toolbarPanel, BorderLayout.SOUTH) ;
 
         JPanel resultsPanel = new JPanel(new BorderLayout());
         resultsPanel.add( resultLabel, BorderLayout.NORTH );
-        resultsPanel.add( resultText, BorderLayout.CENTER );
+        resultsPanel.add( new JScrollPane(resultText), BorderLayout.CENTER );
 
         JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
         splitPane.setTopComponent( stepsPanel );
@@ -113,6 +139,7 @@ public class InteractiveFrame extends JDialog implements ActionListener, TreeSel
     @SuppressWarnings( "unchecked" )
     private void buildChildNodes( Map<String, ?> model, DefaultMutableTreeNode parent, IdentityHashMap<Object,Object> alreadySeen) {
         if (alreadySeen.containsKey( model )) {
+            System.out.printf( "already seen: %s%n", model);
             return;
         } else {
             alreadySeen.put( model, null );

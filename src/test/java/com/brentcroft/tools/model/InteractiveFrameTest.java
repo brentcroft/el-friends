@@ -18,9 +18,9 @@ public class InteractiveFrameTest
 
     @Test
     public void opensInteractiveFrame() {
-        InteractiveFrame iframe = new InteractiveFrame( item );
+        ModelInspectorDialog iframe = new ModelInspectorDialog( item );
         iframe.setSteps( "c:println('hello world')" );
-//        iframe.setModal( true );
-//        iframe.setVisible( true );
+        iframe.setModal( true );
+        iframe.setVisible( true );
     }
 }
