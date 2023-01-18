@@ -144,7 +144,7 @@ enum EntryTag implements FlatTag< Model >
             ( model, event ) -> event.getAttribute( "key" ),
             ( model, text, key ) -> model.put( key, Model
                     .stepsStream( text.trim() )
-                    .collect( Collectors.joining(" ; "))  ) ),
+                    .collect( Collectors.joining(";\n"))  ) ),
 
     TEXT(
             "text",

@@ -13,14 +13,16 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 import static java.util.Objects.isNull;
 
 public class ModelInspectorDialog extends JDialog implements ActionListener, TreeSelectionListener
 {
-    private final Model model;
+    private Model model;
     private final JTree modelTree;
+    private final JTextArea modelLabel;
     private final JTextPane stepsText;
     private final JTextPane resultText;
     private final JButton evalButton;
@@ -31,26 +33,13 @@ public class ModelInspectorDialog extends JDialog implements ActionListener, Tre
         {
             UIManager.setLookAndFeel(lookAndFeel);
         }
-        catch ( ClassNotFoundException e )
-        {
-            e.printStackTrace();
-        }
-        catch ( InstantiationException e )
-        {
-            e.printStackTrace();
-        }
-        catch ( IllegalAccessException e )
-        {
-            e.printStackTrace();
-        }
-        catch ( UnsupportedLookAndFeelException e )
+        catch ( ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e )
         {
             e.printStackTrace();
         }
     }
 
     public ModelInspectorDialog( Model model) {
-        this.model = model;
         setTitle( "Model Inspector" );
         setBounds( 300, 90, 900, 600 );
         setDefaultCloseOperation( DISPOSE_ON_CLOSE );
@@ -59,14 +48,23 @@ public class ModelInspectorDialog extends JDialog implements ActionListener, Tre
         Container container = getContentPane();
         container.setLayout(new BorderLayout());
 
-
-        DefaultMutableTreeNode top = new DefaultMutableTreeNode(model);
-        buildChildNodes( model, top, new IdentityHashMap<>() );
+        Model root = model.getRoot();
+        DefaultMutableTreeNode top = new DefaultMutableTreeNode(root);
+        buildChildNodes( root, top, new IdentityHashMap<>() );
         modelTree = new JTree(top);
         modelTree.addTreeSelectionListener(this);
+        modelLabel = new JTextArea();
+        //modelLabel.setEnabled( false );
+        modelLabel.setEditable( false );
+
 
         JSplitPane topPanel = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        topPanel.setTopComponent( new JScrollPane(modelTree) );
+
+        JSplitPane leftPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+        leftPane.setTopComponent( new JScrollPane(modelTree) );
+        leftPane.setBottomComponent( new JScrollPane(modelLabel) );
+
+        topPanel.setLeftComponent( leftPane );
 
         JLabel elLabel = new JLabel("EL expression:");
         stepsText = new JTextPane();
@@ -91,9 +89,31 @@ public class ModelInspectorDialog extends JDialog implements ActionListener, Tre
         splitPane.setTopComponent( stepsPanel );
         splitPane.setBottomComponent( resultsPanel );
 
-        topPanel.setBottomComponent( splitPane );
+        topPanel.setRightComponent( splitPane );
 
         container.add( topPanel );
+    }
+
+    private String getDollarFields( Model model) {
+        return model
+                .entrySet()
+                .stream()
+                .filter( e -> e.getKey().startsWith( "$" ) && !e.getKey().startsWith( "$shadow" ) )
+                .map( e -> format("%s: %s%n",
+                        e.getKey(),
+                        e.getValue()
+                                .toString()
+                                .replaceAll( "\\s*[\\r\\n]+\\s*", " " )) )
+                .collect( Collectors.joining());
+    }
+
+    private void selectModelNode(ModelNode modelNode) {
+        if (modelNode.getModel() instanceof Model) {
+            this.model = (Model)modelNode.getModel();
+            modelLabel.setText( format("%s%n%s", model.getName(), getDollarFields( model )) );
+        } else {
+            modelLabel.setText( format("%s: %s", modelNode.getKey(), modelNode.getModel()) );
+        }
     }
 
     @Override
@@ -110,6 +130,7 @@ public class ModelInspectorDialog extends JDialog implements ActionListener, Tre
             if (modelNode.isMap()) {
                 stepsText.setText( (String)modelNode.getMap().get("$run") );
             }
+            selectModelNode(modelNode);
         }
     }
 
@@ -130,6 +151,10 @@ public class ModelInspectorDialog extends JDialog implements ActionListener, Tre
             return model instanceof Map;
         }
 
+        public boolean isModel() {
+            return model instanceof Model;
+        }
+
         @SuppressWarnings( "unchecked" )
         public Map<String, ?> getMap() {
             return (Map<String, ?>)model;
@@ -145,9 +170,17 @@ public class ModelInspectorDialog extends JDialog implements ActionListener, Tre
             alreadySeen.put( model, null );
         }
         model.forEach( (key, value) -> {
-            DefaultMutableTreeNode node = new DefaultMutableTreeNode(new ModelNode(key, value));
-            if (value instanceof Map ) {
-                buildChildNodes( ( Map< String, ? > )value, node, alreadySeen );
+            DefaultMutableTreeNode node;
+            if (key.startsWith( "$" ) && !key.startsWith( "$shadow" ))
+            {
+                return;
+            }
+            if (value instanceof Map )
+            {
+                node = new DefaultMutableTreeNode( new ModelNode( key, value ) );
+                buildChildNodes( ( Map< String, ? > ) value, node, alreadySeen );
+            } else {
+                node = new DefaultMutableTreeNode(new ModelNode(key, value));
             }
             parent.add( node );
         } );
