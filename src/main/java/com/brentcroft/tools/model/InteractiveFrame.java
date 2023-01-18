@@ -11,6 +11,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.IdentityHashMap;
 import java.util.Map;
 
 import static java.lang.String.format;
@@ -36,7 +37,7 @@ public class InteractiveFrame extends JDialog implements ActionListener, TreeSel
 
 
         DefaultMutableTreeNode top = new DefaultMutableTreeNode(model);
-        buildChildNodes( model, top );
+        buildChildNodes( model, top, new IdentityHashMap<>() );
         modelTree = new JTree(top);
         modelTree.addTreeSelectionListener(this);
 
@@ -105,13 +106,19 @@ public class InteractiveFrame extends JDialog implements ActionListener, TreeSel
         }
     }
 
-    private void buildChildNodes( Map<String, ?> model, DefaultMutableTreeNode parent) {
+    private void buildChildNodes( Map<String, ?> model, DefaultMutableTreeNode parent, IdentityHashMap<?,?> alreadySeen) {
         model.forEach( (key, value) -> {
-            DefaultMutableTreeNode node = new DefaultMutableTreeNode(new ModelNode(key, value));
-            if (value instanceof Map ) {
-                buildChildNodes( ( Map< String, ? > )value, node );
+            if (alreadySeen.containsKey( value ))
+            {
+                DefaultMutableTreeNode node = new DefaultMutableTreeNode("duplicate: " + key);
+                parent.add( node );
+            } else {
+                DefaultMutableTreeNode node = new DefaultMutableTreeNode(new ModelNode(key, value));
+                if (value instanceof Map ) {
+                    buildChildNodes( ( Map< String, ? > )value, node, alreadySeen );
+                }
+                parent.add( node );
             }
-            parent.add( node );
         } );
     }
 
