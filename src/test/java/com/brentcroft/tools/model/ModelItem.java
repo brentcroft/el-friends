@@ -3,8 +3,8 @@ package com.brentcroft.tools.model;
 import com.brentcroft.tools.jstl.JstlTemplateManager;
 import com.brentcroft.tools.jstl.MapBindings;
 
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Stack;
 
 public class ModelItem extends AbstractModelItem
 {
@@ -18,8 +18,11 @@ public class ModelItem extends AbstractModelItem
 
     public Map< String, Object > newContainer()
     {
+        final Object local = getScopeStack().isEmpty()
+                ? new HashMap<>()
+                : getScopeStack().peek();
         MapBindings bindings = new MapBindings(this);
-        bindings.put( "$local", getScopeStack().peek() );
+        bindings.put( "$local", local );
         bindings.put( "$self", this );
         bindings.put( "$parent", getParent() );
         bindings.put( "$static", getStaticModel() );

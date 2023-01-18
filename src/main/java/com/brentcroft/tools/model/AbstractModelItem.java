@@ -56,8 +56,6 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
         JSON_MAPPER.registerModule( new JavaTimeModule() );
         JSON_MAPPER.setSerializationInclusion( JsonInclude.Include.NON_NULL );
         JSON_MAPPER.setSerializationInclusion( JsonInclude.Include.NON_EMPTY );
-
-        scopeStack.get().push( new HashMap<>() );
     }
 
     public Stack<Map<String, Object>> getScopeStack() {
