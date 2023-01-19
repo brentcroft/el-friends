@@ -98,7 +98,7 @@ public class ModelInspectorDialog extends JDialog implements ActionListener, Tre
         return model
                 .entrySet()
                 .stream()
-                .filter( e -> e.getKey().startsWith( "$" ) && !e.getKey().startsWith( "$shadow" ) )
+                .filter( e -> e.getKey().startsWith( "$" ) && !e.getKey().startsWith( "$shadow" )  && !e.getKey().startsWith( "$$" ) )
                 .map( e -> format("%s: %s%n",
                         e.getKey(),
                         e.getValue()
@@ -110,9 +110,13 @@ public class ModelInspectorDialog extends JDialog implements ActionListener, Tre
     private void selectModelNode(ModelNode modelNode) {
         if (modelNode.getModel() instanceof Model) {
             this.model = (Model)modelNode.getModel();
-            modelLabel.setText( format("%s%n%s", model.getName(), getDollarFields( model )) );
+            modelLabel.setText( format("%s",getDollarFields( model )) );
+            stepsText.setText( modelNode.getKey() );
+        } else if (modelNode.getKey().startsWith( "$$" )) {
+            modelLabel.setText( format("%s", modelNode.getKey()) );
+            stepsText.setText( modelNode.getModel().toString() );
         } else {
-            modelLabel.setText( format("%s: %s", modelNode.getKey(), modelNode.getModel()) );
+            modelLabel.setText( format("%s", modelNode.getModel()) );
         }
     }
 
@@ -127,9 +131,6 @@ public class ModelInspectorDialog extends JDialog implements ActionListener, Tre
         Object nodeInfo = node.getUserObject();
         if (nodeInfo instanceof ModelNode) {
             ModelNode modelNode = (ModelNode)nodeInfo;
-            if (modelNode.isMap()) {
-                stepsText.setText( (String)modelNode.getMap().get("$run") );
-            }
             selectModelNode(modelNode);
         }
     }
@@ -142,9 +143,7 @@ public class ModelInspectorDialog extends JDialog implements ActionListener, Tre
         private final Object model;
 
         public String toString() {
-            return model instanceof Map
-                    ?  format("%s", key)
-                   :  format("%s: %s", key, model);
+            return format("%s", key);
         }
 
         public boolean isMap() {
@@ -171,7 +170,7 @@ public class ModelInspectorDialog extends JDialog implements ActionListener, Tre
         }
         model.forEach( (key, value) -> {
             DefaultMutableTreeNode node;
-            if (key.startsWith( "$" ) && !key.startsWith( "$shadow" ))
+            if (key.startsWith( "$" ) && !key.startsWith( "$shadow" ) && !key.startsWith( "$$" ))
             {
                 return;
             }

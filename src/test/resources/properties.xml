@@ -1,7 +1,7 @@
 <properties>
     <entry key="amount">234</entry>
     <entry key="vat">0.123</entry>
-    <entry key="$run">
+    <entry key="$$run">
         $self.amount = amount + 1;
     </entry>
 </properties>

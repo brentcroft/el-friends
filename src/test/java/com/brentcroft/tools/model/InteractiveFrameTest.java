@@ -22,5 +22,8 @@ public class InteractiveFrameTest
         iframe.setSteps( "c:println('hello world')" );
         iframe.setModal( true );
         iframe.setVisible( true );
+
+        item.getItem( "totals" ).call( "$$doubleJsonData" );
+
     }
 }

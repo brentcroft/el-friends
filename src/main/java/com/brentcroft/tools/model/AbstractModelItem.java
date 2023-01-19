@@ -368,9 +368,9 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
     }
 
     @Override
-    public void steps( String steps )
+    public void steps( String steps, Map<String, Object> argMap )
     {
-        new Steps( steps ).run();
+        new Steps( steps ).run( argMap );
     }
 
     public void maybeDelay() {
@@ -385,7 +385,7 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
         }
     }
 
-    class Steps implements Runnable
+    class Steps
     {
         private final String steps;
         private final boolean inline;
@@ -405,11 +405,10 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
             this.inline = true;
         }
 
-
-        public void run()
+        public void run(Map<String, Object> argMap)
         {
             stepsStack.get().push( this );
-            scopeStack.get().push( new HashMap<>() );
+            scopeStack.get().push( argMap );
 
             try
             {

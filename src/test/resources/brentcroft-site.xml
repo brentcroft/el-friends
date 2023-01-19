@@ -13,6 +13,12 @@
         <datetime key="timestamp">2007-12-03T10:15:30.123456789</datetime>
         <el key="data">[ 1, 2, 3, 4, 5 ]</el>
         <json key="jsonData">[ 1, 2, 3, 4, 5 ]</json>
+        <steps key="$$doubleJsonData">
+            jsonData
+                .stream()
+                .map( i -> 2 * i )
+                .toList();
+        </steps>
     </model>
     <model key="home">
         <model key="shithead">
@@ -20,7 +26,7 @@
         </model>
     </model>
     <model key="openShithead">
-        <steps key="$run">
+        <steps key="$$run">
             $local.delayMillis = 100;
 
             # comment lines are stripped out

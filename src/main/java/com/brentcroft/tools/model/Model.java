@@ -82,14 +82,22 @@ public interface Model extends Map< String, Object >
                 .of(uncommented.split( "\\s*[;]+\\s*" ));
     }
 
-    void steps(String steps);
+    void steps(String steps, Map< String, Object > args);
 
-    default void call(String key) {
-        steps( (String) get(key) );
+    default void steps(String steps) {
+        steps( steps, new HashMap<>() );
+    }
+
+    default void call(String key, Map< String, Object > args) {
+        steps( (String) get(key), args );
+    }
+
+    default void call(String key ){
+        call( key, new HashMap<>() );
     }
 
     default void run(){
-        call( "$run" );
+        call( "$$run" );
     }
 
     String toJson();
