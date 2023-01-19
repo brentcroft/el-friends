@@ -195,7 +195,7 @@ public class ModelInspectorDialog extends JDialog implements ActionListener, Tre
         if (e.getSource() == evalButton) {
             String el = stepsText.getText();
             try {
-                Object evalResult = model.eval( el );
+                Object evalResult = model.eval( model.expand( el ) );
                 if (isNull(evalResult)) {
                     resultText.setText( "null" );
                 } else {
