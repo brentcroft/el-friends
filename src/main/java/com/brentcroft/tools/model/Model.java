@@ -1,6 +1,8 @@
 package com.brentcroft.tools.model;
 
 import com.brentcroft.tools.materializer.Materializer;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import org.xml.sax.InputSource;
 
 import java.io.File;
@@ -292,6 +294,9 @@ public interface Model extends Map< String, Object >
                 logStep( format( "whileDo [%d]: test: '%s' == %s", tries[0], booleanTest, test ) );
                 return test;
             } catch (Exception e) {
+                if (e.getCause() instanceof ReturnException) {
+                    throw (ReturnException)e.getCause();
+                }
                 logStep( format(
                         "whileDo: test [%d: %s]; [%s] %s",
                         tries[0], booleanTest,
@@ -306,11 +311,16 @@ public interface Model extends Map< String, Object >
                 try {
                     eval( expand( op ) );
                 } catch (Exception e) {
+                    if (e.getCause() instanceof ReturnException) {
+                        throw (ReturnException)e.getCause();
+                    }
                     logStep( format(
                             "whileDo: operation [%d: %s]; [%s] %s",
                             tries[0], op,
                             e.getClass().getSimpleName(),
                             e.getMessage() ) );
+
+                    e.printStackTrace();
                 }
             } );
         }
@@ -327,4 +337,9 @@ public interface Model extends Map< String, Object >
     void maybeDelay();
     interface Expander extends BiFunction<String, Map<String, Object>, String> {}
     interface Evaluator extends BiFunction<String, Map<String, Object>, Object> {}
+    @AllArgsConstructor
+    @Getter
+    class ReturnException extends RuntimeException {
+        private final Object value;
+    }
 }

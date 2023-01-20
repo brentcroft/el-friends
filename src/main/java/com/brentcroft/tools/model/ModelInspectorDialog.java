@@ -48,8 +48,8 @@ public class ModelInspectorDialog extends JDialog implements ActionListener, Tre
         Container container = getContentPane();
         container.setLayout(new BorderLayout());
 
-        Model root = model.getRoot();
-        DefaultMutableTreeNode top = new DefaultMutableTreeNode(root);
+        Map< String, ? > root = model.getRoot();
+        DefaultMutableTreeNode top = new DefaultMutableTreeNode( root );
         buildChildNodes( root, top, new IdentityHashMap<>() );
         modelTree = new JTree(top);
         modelTree.addTreeSelectionListener(this);
@@ -99,6 +99,7 @@ public class ModelInspectorDialog extends JDialog implements ActionListener, Tre
                 .entrySet()
                 .stream()
                 .filter( e -> e.getKey().startsWith( "$" ) && !e.getKey().startsWith( "$shadow" )  && !e.getKey().startsWith( "$$" ) )
+                .sorted( Map.Entry.comparingByKey() )
                 .map( e -> format("%s: %s%n",
                         e.getKey(),
                         e.getValue()
@@ -108,8 +109,8 @@ public class ModelInspectorDialog extends JDialog implements ActionListener, Tre
     }
 
     private void selectModelNode(ModelNode modelNode) {
+        this.model = modelNode.getAncestorModel();
         if (modelNode.getModel() instanceof Model) {
-            this.model = (Model)modelNode.getModel();
             modelLabel.setText( format("%s",getDollarFields( model )) );
             stepsText.setText( modelNode.getKey() );
         } else if (modelNode.getKey().startsWith( "$$" )) {
@@ -139,6 +140,7 @@ public class ModelInspectorDialog extends JDialog implements ActionListener, Tre
     @Setter
     @AllArgsConstructor
     public static class ModelNode {
+        private final Object parent;
         private final String key;
         private final Object model;
 
@@ -158,6 +160,17 @@ public class ModelInspectorDialog extends JDialog implements ActionListener, Tre
         public Map<String, ?> getMap() {
             return (Map<String, ?>)model;
         }
+
+        public Model getAncestorModel()
+        {
+            if (model instanceof Model) {
+                return (Model)model;
+            } else if (parent instanceof ModelNode) {
+                return ((ModelNode)parent).getAncestorModel();
+            } else {
+                return null;
+            }
+        }
     }
 
     @SuppressWarnings( "unchecked" )
@@ -168,21 +181,25 @@ public class ModelInspectorDialog extends JDialog implements ActionListener, Tre
         } else {
             alreadySeen.put( model, null );
         }
-        model.forEach( (key, value) -> {
-            DefaultMutableTreeNode node;
-            if (key.startsWith( "$" ) && !key.startsWith( "$shadow" ) && !key.startsWith( "$$" ))
-            {
-                return;
-            }
-            if (value instanceof Map )
-            {
-                node = new DefaultMutableTreeNode( new ModelNode( key, value ) );
-                buildChildNodes( ( Map< String, ? > ) value, node, alreadySeen );
-            } else {
-                node = new DefaultMutableTreeNode(new ModelNode(key, value));
-            }
-            parent.add( node );
-        } );
+        model
+                .entrySet()
+                .stream()
+                .sorted( Map.Entry.comparingByKey() )
+                .forEachOrdered( e -> {
+                    String key = e.getKey();
+                    Object value = e.getValue();
+                    DefaultMutableTreeNode node;
+                    if (key.startsWith( "$" ) && !key.startsWith( "$shadow" ) && !key.startsWith( "$$" ))
+                    {
+                        return;
+                    }
+                    node = new DefaultMutableTreeNode( new ModelNode(parent.getUserObject(), key, value ) );
+                    if (value instanceof Map )
+                    {
+                        buildChildNodes( ( Map< String, ? > ) value, node, alreadySeen );
+                    }
+                    parent.add( node );
+                } );
     }
 
     public void setSteps(String steps) {

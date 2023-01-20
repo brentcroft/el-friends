@@ -50,7 +50,9 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
     private static final Map< String, Object > staticModel = new LinkedHashMap<>();
     private static final ThreadLocal< Stack<Map<String, Object>> > scopeStack = ThreadLocal.withInitial( () -> {
         Stack<Map<String, Object>> s = new Stack<>();
-        s.push( new HashMap<>() );
+        Map<String, Object> local = new HashMap<>();
+        local.put( "$local", local );
+        s.push( local );
         return s;
     } );
 
@@ -94,24 +96,23 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
      */
     public Object get( Object key )
     {
-        // reverse order?
-        return scopeStack
-            .get()
-            .stream()
-            .filter( scope -> scope.containsKey( key ) )
-            .map( scope -> scope.get( key ) )
-            .findFirst()
-            .orElseGet( () -> Optional
-                    .ofNullable( super.get( key ) )
-                    .map( p -> p instanceof String ? expand( ( String ) p ) : p )
-                    .orElseGet( () -> Optional
-                    .ofNullable( getParent() )
-                    .map( p -> {
-                        Object v = p.get( key );
-                        return v instanceof String ? expand( ( String ) v ) : v;
-                    } )
-                    .orElse( staticModel.get( key ) ) )
-                );
+        Stack<Map<String, Object>> stack = scopeStack.get();
+        for (int i = stack.size() -1; i >= 0; i--) {
+            Map<String, Object> scope = stack.get( i );
+            if (scope.containsKey( key )) {
+                return scope.get( key );
+            }
+        }
+        return Optional
+                .ofNullable( super.get( key ) )
+                .map( p -> p instanceof String ? expand( ( String ) p ) : p )
+                .orElseGet( () -> Optional
+                .ofNullable( getParent() )
+                .map( p -> {
+                    Object v = p.get( key );
+                    return v instanceof String ? expand( ( String ) v ) : v;
+                } )
+                .orElse( staticModel.get( key ) ));
     }
 
     public Object put( String key, Object value )
@@ -407,13 +408,12 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
 
         public void run(Map<String, Object> argMap)
         {
-            stepsStack.get().push( this );
             scopeStack.get().push( argMap );
 
             try
             {
                 String indent = IntStream
-                        .range( 0, stepsStack.get().size() )
+                        .range( 0, scopeStack.get().size() )
                         .mapToObj( i -> "  " )
                         .collect( Collectors.joining() );
 
@@ -431,11 +431,15 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
                             logStep( format( "%s -> %s", indent, step ) );
                             eval( step );
                         } );
+            } catch (RuntimeException e) {
+                if (e.getCause() instanceof ReturnException) {
+                    return;
+                }
+                throw e;
             }
             finally
             {
                 scopeStack.get().pop();
-                stepsStack.get().pop();
             }
         }
     }
