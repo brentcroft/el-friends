@@ -278,6 +278,32 @@ public interface Model extends Map< String, Object >
         }
     }
 
+    default Model tryExcept( Object operation, Object onExceptionOperations) {
+        String ops = operation instanceof Collection
+                           ? ((Collection<?>)operation)
+                                   .stream()
+                                   .filter( Objects::nonNull )
+                                   .map( Object::toString )
+                                   .collect( Collectors.joining(";\n"))
+                           : operation.toString();
+        String exOps = onExceptionOperations instanceof Collection
+                     ? ((Collection<?>)onExceptionOperations)
+                             .stream()
+                             .filter( Objects::nonNull )
+                             .map( Object::toString )
+                             .collect( Collectors.joining(";\n"))
+                     : operation.toString();
+        try {
+            steps( ops );
+        } catch (Exception e) {
+            System.out.printf( "Handling exception: [%s]: %s%n", e.getClass().getSimpleName(), e.getMessage());
+            Map<String, Object> local = new HashMap<>();
+            local.put( "exception", e );
+            steps( exOps, local );
+        }
+        return this;
+    }
+
     default Model whileDo( String booleanTest, Object operation, int maxTries ) {
         int[] tries = {0};
         List<String> ops = operation instanceof Collection
@@ -291,7 +317,9 @@ public interface Model extends Map< String, Object >
         Supplier<Boolean> whileTest = () ->  {
             try {
                 boolean test = (Boolean)eval( expand( booleanTest ) );
-                logStep( format( "whileDo [%d]: test: '%s' == %s", tries[0], booleanTest, test ) );
+                if (tries[0] > 0 || !test) {
+                    logStep( format( "whileDo [%d]: test: '%s' == %s", tries[0], booleanTest, test ) );
+                }
                 return test;
             } catch (Exception e) {
                 if (e.getCause() instanceof ReturnException) {
