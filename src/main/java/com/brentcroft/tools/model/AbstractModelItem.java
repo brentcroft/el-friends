@@ -29,7 +29,6 @@ import static java.lang.String.format;
 public abstract class AbstractModelItem extends LinkedHashMap< String, Object > implements Model
 {
     public static String OPERATION_DELAY_MILLIS = "$operationDelayMillis";
-    public static String STEP_DELAY_MILLIS = "$stepDelayMillis";
 
     protected static Materializer< Properties > PROPERTIES_XML_MATERIALIZER = new Materializer<>(
             () -> PropertiesRootTag.ROOT,
@@ -96,23 +95,27 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
      */
     public Object get( Object key )
     {
+        if (key == null) {
+            return null;
+        }
         Stack<Map<String, Object>> stack = scopeStack.get();
         for (int i = stack.size() -1; i >= 0; i--) {
             Map<String, Object> scope = stack.get( i );
-            if (scope.containsKey( key )) {
-                return scope.get( key );
+            if (scope.containsKey( key.toString() )) {
+                Object v = scope.get( key );
+                return v instanceof String ? expand( ( String ) v ) : v;
             }
         }
         return Optional
                 .ofNullable( super.get( key ) )
                 .map( p -> p instanceof String ? expand( ( String ) p ) : p )
                 .orElseGet( () -> Optional
-                .ofNullable( getParent() )
-                .map( p -> {
-                    Object v = p.get( key );
-                    return v instanceof String ? expand( ( String ) v ) : v;
-                } )
-                .orElse( staticModel.get( key ) ));
+                    .ofNullable( getParent() )
+                    .map( p -> {
+                        Object v = p.get( key );
+                        return v instanceof String ? expand( ( String ) v ) : v;
+                    } )
+                    .orElse( staticModel.get( key ) ));
     }
 
     public Object put( String key, Object value )
@@ -389,21 +392,10 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
     class Steps
     {
         private final String steps;
-        private final boolean inline;
-
-        public Steps(  )
-        {
-            this.steps = Optional
-                    .ofNullable( get( "$run" ) )
-                    .map( Object::toString )
-                    .orElseThrow( () -> new IllegalArgumentException( format( "Item [%s] has no value for $run", path() ) ) );
-            this.inline = false;
-        }
 
         public Steps( String steps )
         {
             this.steps = steps;
-            this.inline = true;
         }
 
         public void run(Map<String, Object> argMap)
@@ -419,18 +411,14 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
 
                 String modelPath = path();
 
-                logStep(
-                        inline
-                        ? format( "%s%s(inline)", indent, modelPath.isEmpty() ? "" : ( modelPath + ":" ) )
-                        : format( "%s%s$run", indent, modelPath.isEmpty() ? "" : ( modelPath + "." ) )
-                );
+                logStep( format( "%s%s (inline)", indent, modelPath.isEmpty() ? "" : ( modelPath + ":" ) ) );
 
                 Model
-                        .stepsStream( expand( steps ) )
-                        .forEach( step -> {
-                            logStep( format( "%s -> %s", indent, step ) );
-                            eval( step );
-                        } );
+                        .stepsStream( steps )
+                        .peek( step -> logStep( format( "%s -> %s", indent, step ) ) )
+                        .map( AbstractModelItem.this::expand )
+                        .forEach( AbstractModelItem.this::eval );
+
             } catch (RuntimeException e) {
                 if (e.getCause() instanceof ReturnException) {
                     return;
