@@ -39,7 +39,7 @@ public class ModelInspectorDialog extends JDialog implements ActionListener, Tre
         }
     }
 
-    public ModelInspectorDialog( Model model) {
+    public ModelInspectorDialog( Map< String, ? > model) {
         setTitle( "Model Inspector" );
         setBounds( 300, 90, 900, 600 );
         setDefaultCloseOperation( DISPOSE_ON_CLOSE );
@@ -48,7 +48,14 @@ public class ModelInspectorDialog extends JDialog implements ActionListener, Tre
         Container container = getContentPane();
         container.setLayout(new BorderLayout());
 
-        Map< String, ? > root = model.getRoot();
+        Map< String, ? > root = model instanceof Model
+                                ? ((Model)model).getRoot()
+                                : model;
+
+        this.model = model instanceof Model
+                     ? ((Model)model)
+                     : null;
+
         DefaultMutableTreeNode top = new DefaultMutableTreeNode( root );
         buildChildNodes( root, top, new IdentityHashMap<>() );
         modelTree = new JTree(top);
