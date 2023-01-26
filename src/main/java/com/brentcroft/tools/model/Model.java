@@ -84,22 +84,41 @@ public interface Model extends Map< String, Object >
                 .of(uncommented.split( "\\s*[;]+\\s*" ));
     }
 
-    void steps(String steps, Map< String, Object > args);
-
-    default void steps(String steps) {
-        steps( steps, new HashMap<>() );
+    static String stepsText(Object text) {
+        return text instanceof Collection
+            ? ((Collection<?>)text)
+                   .stream()
+                   .filter( Objects::nonNull )
+                   .map( Object::toString )
+                   .collect( Collectors.joining(";\n"))
+           : text.toString();
+    }
+    static List<String> stepsList(Object list) {
+        return list instanceof Collection
+               ? ((Collection<?>)list)
+                       .stream()
+                       .filter( Objects::nonNull )
+                       .map( Object::toString )
+                       .collect( Collectors.toList())
+               : Collections.singletonList( list.toString() );
     }
 
-    default void call(String key, Map< String, Object > args) {
-        steps( (String) get(key), args );
+    Object steps(String steps, Map< String, Object > args);
+
+    default Object steps(String steps) {
+        return steps( steps, new HashMap<>() );
     }
 
-    default void call(String key ){
-        call( key, new HashMap<>() );
+    default Object call(String key, Map< String, Object > args) {
+        return steps( (String) get(key), args );
     }
 
-    default void run(){
-        call( "$$run" );
+    default Object call(String key ){
+        return call( key, new HashMap<>() );
+    }
+
+    default Object run(){
+        return call( "$$run" );
     }
 
     String toJson();
@@ -279,20 +298,8 @@ public interface Model extends Map< String, Object >
     }
 
     default Model tryExcept( Object operation, Object onExceptionOperations) {
-        String ops = operation instanceof Collection
-                           ? ((Collection<?>)operation)
-                                   .stream()
-                                   .filter( Objects::nonNull )
-                                   .map( Object::toString )
-                                   .collect( Collectors.joining(";\n"))
-                           : operation.toString();
-        String exOps = onExceptionOperations instanceof Collection
-                     ? ((Collection<?>)onExceptionOperations)
-                             .stream()
-                             .filter( Objects::nonNull )
-                             .map( Object::toString )
-                             .collect( Collectors.joining(";\n"))
-                     : operation.toString();
+        String ops = stepsText(operation);
+        String exOps = stepsText(onExceptionOperations);
         try {
             steps( ops );
         } catch (Exception e) {
@@ -306,14 +313,7 @@ public interface Model extends Map< String, Object >
 
     default Model whileDo( String booleanTest, Object operation, int maxTries ) {
         int[] tries = {0};
-        List<String> ops = operation instanceof Collection
-                           ? ((Collection<?>)operation)
-                                   .stream()
-                                   .filter( Objects::nonNull )
-                                   .map( Object::toString )
-                                   .collect( Collectors.toList())
-                           : Collections.singletonList( operation.toString() );
-
+        List<String> ops = stepsList(operation);
         Supplier<Boolean> whileTest = () ->  {
             try {
                 boolean test = (Boolean)eval( expand( booleanTest ) );
@@ -360,6 +360,22 @@ public interface Model extends Map< String, Object >
 
     default Model whileDoAll( String booleanTest, List<String> operations, int maxTries ) {
         return whileDo( booleanTest, operations, maxTries);
+    }
+
+    default Model ifThen( String booleanTest, Object thenOps) {
+        if ((Boolean)eval(expand(booleanTest))) {
+            steps(stepsText(thenOps));
+        }
+        return this;
+    }
+
+    default Model ifThenElse( String booleanTest, Object thenOps, Object elseOps) {
+        if ((Boolean)eval(expand(booleanTest))) {
+            steps(stepsText(thenOps));
+        } else {
+            steps(stepsText(elseOps));
+        }
+        return this;
     }
 
     void maybeDelay();

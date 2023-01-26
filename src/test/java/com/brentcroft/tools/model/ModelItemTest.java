@@ -30,6 +30,13 @@ public class ModelItemTest
     }
 
     @Test
+    public void stringifiesObjects() {
+        item.appendFromJson( "{ '$xml': 'brentcroft-site.xml' }" );
+        String json = (String)item.eval( "$self.stringify( days.wednesday.rubbish )" );
+        assertEquals("[ \"glass\", \"paper\", \"plastic\", \"general\", 105 ]", json);
+    }
+
+    @Test
     public void createsEmptyModelItemFromJson() {
         Model emptyModel = new ModelItem().appendFromJson( "{}" );
         assertEquals("{}", emptyModel.toJson().replaceAll( " ", "" ));

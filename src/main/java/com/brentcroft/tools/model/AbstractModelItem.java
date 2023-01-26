@@ -63,6 +63,16 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
         JSON_MAPPER.setSerializationInclusion( JsonInclude.Include.NON_EMPTY );
     }
 
+    public static String stringify(Object value) {
+        try {
+            return JSON_MAPPER
+                    .writerWithDefaultPrettyPrinter()
+                    .writeValueAsString( value );
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException(format("Bad stringification: %s", value), e);
+        }
+    }
+
     public Stack<Map<String, Object>> getScopeStack() {
         return scopeStack.get();
     }
@@ -372,9 +382,9 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
     }
 
     @Override
-    public void steps( String steps, Map<String, Object> argMap )
+    public Object steps( String steps, Map<String, Object> argMap )
     {
-        new Steps( steps ).run( argMap );
+        return new Steps( steps ).run( argMap );
     }
 
     public void maybeDelay() {
@@ -398,7 +408,7 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
             this.steps = steps;
         }
 
-        public void run(Map<String, Object> argMap)
+        public Object run(Map<String, Object> argMap)
         {
             scopeStack.get().push( argMap );
 
@@ -413,15 +423,20 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
 
                 logStep( format( "%s%s (inline)", indent, modelPath.isEmpty() ? "" : ( modelPath + ":" ) ) );
 
+                Object[] lastResult = {null};
+
                 Model
                         .stepsStream( steps )
                         .peek( step -> logStep( format( "%s -> %s", indent, step ) ) )
                         .map( AbstractModelItem.this::expand )
-                        .forEach( AbstractModelItem.this::eval );
+                        .forEach( step -> lastResult[0] = eval(step) );
+
+                return lastResult[0];
+
 
             } catch (RuntimeException e) {
                 if (e.getCause() instanceof ReturnException) {
-                    return;
+                    return ( ( ReturnException ) e.getCause() ) .getValue();
                 }
                 throw e;
             }
