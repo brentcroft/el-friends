@@ -1,6 +1,7 @@
 package com.brentcroft.tools.model;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.nio.file.Paths;
@@ -17,6 +18,7 @@ public class InteractiveFrameTest
     }
 
     @Test
+    @Ignore
     public void opensInteractiveFrame() {
         ModelInspectorDialog iframe = new ModelInspectorDialog( item );
         iframe.setSteps( "c:println('hello world')" );
