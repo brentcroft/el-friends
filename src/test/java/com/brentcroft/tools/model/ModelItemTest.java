@@ -30,6 +30,13 @@ public class ModelItemTest
     }
 
     @Test
+    public void stringifiesRoundTripsItem() {
+        String expected = "{  \"fred\" : \"bloggs\"}";
+        String actual = AbstractModelItem.stringify( new ModelItem().appendFromJson( expected ) );
+        assertEquals(expected, actual.replaceAll( "[\n\r]+", "" ));
+    }
+
+    @Test
     public void stringifiesObjects() {
         item.appendFromJson( "{ '$xml': 'brentcroft-site.xml' }" );
         String json = (String)item.eval( "$self.stringify( days.wednesday.rubbish )" );

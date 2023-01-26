@@ -69,7 +69,7 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
                     .writerWithDefaultPrettyPrinter()
                     .writeValueAsString( value );
         } catch (JsonProcessingException e) {
-            throw new IllegalArgumentException(format("Bad stringification: %s", value), e);
+            throw new ModelException(format("Bad stringification: %s", value), e);
         }
     }
 
@@ -87,7 +87,7 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
         }
         catch ( IOException e )
         {
-            throw new IllegalArgumentException( format( "Invalid file: %s", file ), e );
+            throw new ModelException( format( "Invalid file: %s", file ), e );
         }
     }
 
@@ -173,11 +173,11 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
         File directory = directoryPath.toFile();
         if ( ! directory.exists() )
         {
-            throw new IllegalArgumentException( format( "Directory does not exist: %s", directory.getPath() ) );
+            throw new ModelException( format( "Directory does not exist: %s", directory.getPath() ) );
         }
         if ( ! directory.isDirectory() )
         {
-            throw new IllegalArgumentException( format( "Not a directory: %s", directory.getPath() ) );
+            throw new ModelException( format( "Not a directory: %s", directory.getPath() ) );
         }
 
         File cd = getCurrentDirectory().toFile();
@@ -195,7 +195,7 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
         }
         catch ( JsonProcessingException e )
         {
-            throw new IllegalArgumentException( format( "JSON text failed to materialize: %s", jsonText ), e );
+            throw new ModelException( format( "JSON text failed to materialize: %s", jsonText ), e );
         }
     }
 
@@ -217,7 +217,8 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
         }
         if ( containsKey( "$xml" ) )
         {
-            File file = getLocalFile( get( "$xml" ).toString() );
+            Object xmlValue = get( "$xml" );
+            File file = getLocalFile( xmlValue.toString() );
             putOnFileStack( file.toPath() );
             try
             {
@@ -226,7 +227,7 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
             }
             catch ( FileNotFoundException e )
             {
-                throw new RuntimeException( e );
+                throw new ModelException( format("Bad $xml value: %s", xmlValue), e );
             }
             finally
             {
@@ -322,7 +323,7 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
         }
         catch ( Exception e )
         {
-            throw new IllegalArgumentException( format( "Properties file not found: %s", file ), e );
+            throw new ModelException( format( "Properties file not found: %s", file ), e );
         }
         Function< String, String > uptoAnyPlaceHolder = value -> {
             int phi = value.indexOf( "{0}" );
@@ -365,7 +366,7 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
         }
         catch ( JsonProcessingException e )
         {
-            throw new IllegalArgumentException( format( "ModelItem at path: %s", path() ), e );
+            throw new ModelException( format( "ModelItem at path: %s", path() ), e );
         }
     }
 
@@ -421,13 +422,25 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
 
                 String modelPath = path();
 
-                logStep( format( "%s%s (inline)", indent, modelPath.isEmpty() ? "" : ( modelPath + ":" ) ) );
+                notifyModelEvent(
+                        ModelEvent
+                                .EventType
+                                .STEPS_START
+                                .newEvent(
+                                        AbstractModelItem.this,
+                                        format( "%s%s (inline)", indent, modelPath.isEmpty() ? "" : ( modelPath + ":" ) ) ) );
 
                 Object[] lastResult = {null};
 
                 Model
                         .stepsStream( steps )
-                        .peek( step -> logStep( format( "%s -> %s", indent, step ) ) )
+                        .peek( step -> notifyModelEvent(
+                                ModelEvent
+                                        .EventType
+                                        .STEP_START
+                                        .newEvent(
+                                                AbstractModelItem.this,
+                                                format( "%s -> %s", indent, step ) ) ) )
                         .map( AbstractModelItem.this::expand )
                         .forEach( step -> lastResult[0] = eval(step) );
 

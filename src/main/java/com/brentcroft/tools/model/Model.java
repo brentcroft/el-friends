@@ -3,6 +3,7 @@ package com.brentcroft.tools.model;
 import com.brentcroft.tools.materializer.Materializer;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.xml.sax.InputSource;
 
 import java.io.File;
@@ -18,15 +19,17 @@ import static java.util.Objects.nonNull;
 
 public interface Model extends Map< String, Object >
 {
-
-    //Map<String, Object> newContainer();
-
     Expander getExpander();
     Evaluator getEvaluator();
 
-    default void logStep( String text ) {
-        System.out.println( text );
+    default void notifyModelEvent( ModelEvent modelEvent) {
+        System.out.printf(
+                "%s%n",
+//                modelEvent.getSource(),
+//                modelEvent.getEventType(),
+                modelEvent.getMessage());
     }
+
 
     Object set(String key, Object value);
     Object putStatic( String key, Object value);
@@ -157,7 +160,7 @@ public interface Model extends Map< String, Object >
         }
         catch ( Exception e )
         {
-            throw new IllegalArgumentException( "Failed to create new item.", e );
+            throw new ModelException( "Failed to create new item.", e );
         }
     }
 
@@ -229,7 +232,7 @@ public interface Model extends Map< String, Object >
         {
             return ( Model ) node;
         }
-        throw new IllegalArgumentException( format( "Object at path '%s' is not a Model: '%s'",
+        throw new ModelException( format( "Object at path '%s' is not a Model: '%s'",
                 path,
                 Optional
                         .ofNullable( node )
@@ -318,18 +321,26 @@ public interface Model extends Map< String, Object >
             try {
                 boolean test = (Boolean)eval( expand( booleanTest ) );
                 if (tries[0] > 0 || !test) {
-                    logStep( format( "whileDo [%d]: test: '%s' == %s", tries[0], booleanTest, test ) );
+                    notifyModelEvent(
+                            ModelEvent
+                                    .EventType
+                                    .WHILE_DO_TEST
+                                    .newEvent(this,format("whileDo [%d]: test: '%s' == %s", tries[0], booleanTest, test ) ) );
                 }
                 return test;
             } catch (Exception e) {
                 if (e.getCause() instanceof ReturnException) {
                     throw (ReturnException)e.getCause();
                 }
-                logStep( format(
-                        "whileDo: test [%d: %s]; [%s] %s",
-                        tries[0], booleanTest,
-                        e.getClass().getSimpleName(),
-                        e.getMessage() ) );
+                notifyModelEvent(
+                        ModelEvent
+                                .EventType
+                                .WHILE_DO_TEST
+                                .newEvent(this, format(
+                                        "whileDo: test [%d: %s]; [%s] %s",
+                                        tries[0], booleanTest,
+                                        e.getClass().getSimpleName(),
+                                        e.getMessage() ) ) );
                 return true;
             }
         };
@@ -342,18 +353,20 @@ public interface Model extends Map< String, Object >
                     if (e.getCause() instanceof ReturnException) {
                         throw (ReturnException)e.getCause();
                     }
-                    logStep( format(
-                            "whileDo: operation [%d: %s]; [%s] %s",
-                            tries[0], op,
-                            e.getClass().getSimpleName(),
-                            e.getMessage() ) );
-
-                    e.printStackTrace();
+                    notifyModelEvent(
+                            ModelEvent
+                                    .EventType
+                                    .WHILE_DO_OPERATION
+                                    .newEvent(this, format(
+                                            "whileDo: operation [%d: %s]; [%s] %s",
+                                            tries[0], op,
+                                            e.getClass().getSimpleName(),
+                                            e.getMessage() ) ) );
                 }
             } );
         }
         if ( tries[0] >= maxTries ) {
-            throw new IllegalArgumentException(format("Ran out of tries (%s) but: %s", tries[0], booleanTest ));
+            throw new RanOutOfTriesException(tries[0], booleanTest);
         }
         return this;
     }
@@ -381,9 +394,30 @@ public interface Model extends Map< String, Object >
     void maybeDelay();
     interface Expander extends BiFunction<String, Map<String, Object>, String> {}
     interface Evaluator extends BiFunction<String, Map<String, Object>, Object> {}
+    @NoArgsConstructor
+    class ModelException extends RuntimeException {
+        ModelException(String message) {
+            super(message);
+        }
+        ModelException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
     @AllArgsConstructor
     @Getter
-    class ReturnException extends RuntimeException {
+    class ReturnException extends ModelException {
         private final Object value;
+        public String toString() {
+            return format("Returning: %s", value);
+        }
+    }
+    @AllArgsConstructor
+    @Getter
+    class RanOutOfTriesException extends ModelException {
+        private final int tries;
+        private final String test;
+        public String toString() {
+            return format("Ran out of tries (%s) but: %s", tries, test);
+        }
     }
 }
