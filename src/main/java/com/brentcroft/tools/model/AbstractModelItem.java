@@ -46,7 +46,7 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
 
     private static final ThreadLocal< Stack< Path > > pathStack = ThreadLocal.withInitial( Stack::new );
     private static final Map< String, Object > staticModel = new LinkedHashMap<>();
-    private static final ThreadLocal< Stack<Map<String, Object>> > scopeStack = ThreadLocal.withInitial( () -> {
+    protected static final ThreadLocal< Stack<Map<String, Object>> > scopeStack = ThreadLocal.withInitial( () -> {
         Stack<Map<String, Object>> s = new Stack<>();
         Map<String, Object> local = new HashMap<>();
         // allow assignment in EL
