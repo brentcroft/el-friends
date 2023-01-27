@@ -1,9 +1,6 @@
 package com.brentcroft.tools.model;
 
 import com.brentcroft.tools.materializer.Materializer;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
 import org.xml.sax.InputSource;
 
 import java.io.File;
@@ -394,30 +391,4 @@ public interface Model extends Map< String, Object >
     void maybeDelay();
     interface Expander extends BiFunction<String, Map<String, Object>, String> {}
     interface Evaluator extends BiFunction<String, Map<String, Object>, Object> {}
-    @NoArgsConstructor
-    class ModelException extends RuntimeException {
-        ModelException(String message) {
-            super(message);
-        }
-        ModelException(String message, Throwable cause) {
-            super(message, cause);
-        }
-    }
-    @AllArgsConstructor
-    @Getter
-    class ReturnException extends ModelException {
-        private final Object value;
-        public String toString() {
-            return format("Returning: %s", value);
-        }
-    }
-    @AllArgsConstructor
-    @Getter
-    class RanOutOfTriesException extends ModelException {
-        private final int tries;
-        private final String test;
-        public String toString() {
-            return format("Ran out of tries (%s) but: %s", tries, test);
-        }
-    }
 }
