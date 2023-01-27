@@ -253,13 +253,15 @@ public class ModelItemTest
     public void usesModelSteps() {
         item
                 .appendFromJson( "{ '$json': 'nested-01.json' }" )
-                .insertFromJson( "incrementer","{ '$$run': '$parent.level = level + 1' }" );
+                .appendFromJson( "{ 'incrementer': { '$$run': '$parent.level = $parent.level + 1' } }" );
 
         item.setName( "root" );
 
         assertEquals(3, item.get( "level" ));
 
         item.getItem( "incrementer" ).run();
+
+        System.out.println(item.toJson());
 
         assertEquals(4L, item.get( "level" ));
     }
@@ -268,7 +270,7 @@ public class ModelItemTest
     public void usesModelStepsInline() {
         item
                 .appendFromJson( "{ '$json': 'nested-01.json' }" )
-                .insertFromJson( "incrementer","{ '$$run': '$parent.level = level + 1' }" );
+                .insertFromJson( "incrementer","{ '$$run': '$parent.level = $parent.level + 1' }" );
 
         item.setName( "root" );
         assertEquals(3, item.get( "level" ));

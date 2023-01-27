@@ -108,24 +108,16 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
         if (key == null) {
             return null;
         }
-        Stack<Map<String, Object>> stack = scopeStack.get();
-        for (int i = stack.size() -1; i >= 0; i--) {
-            Map<String, Object> scope = stack.get( i );
-            if (scope.containsKey( key.toString() )) {
-                Object v = scope.get( key );
-                return v instanceof String ? expand( ( String ) v ) : v;
-            }
-        }
         return Optional
                 .ofNullable( super.get( key ) )
                 .map( p -> p instanceof String ? expand( ( String ) p ) : p )
-                .orElseGet( () -> Optional
-                    .ofNullable( getParent() )
-                    .map( p -> {
-                        Object v = p.get( key );
-                        return v instanceof String ? expand( ( String ) v ) : v;
-                    } )
-                    .orElse( staticModel.get( key ) ));
+//                .orElseGet( () -> Optional
+//                    .ofNullable( getParent() )
+//                    .map( p -> {
+//                        Object v = p.get( key );
+//                        return v instanceof String ? expand( ( String ) v ) : v;
+//                    } )
+                    .orElse( staticModel.get( key ) );
     }
 
     public Object put( String key, Object value )
@@ -165,7 +157,11 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
         return Optional
                 .ofNullable( ( String ) get( "$currentDirectory" ) )
                 .map( Paths::get )
-                .orElse( Paths.get( "." ) );
+                .orElseGet( () -> Optional
+                        .ofNullable( getParent() )
+                        .filter( p -> p instanceof Model)
+                        .map( p -> ((Model)p).getCurrentDirectory())
+                        .orElse( Paths.get( "." ) ));
     }
 
     public void setCurrentDirectory( Path directoryPath )
@@ -450,6 +446,9 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
             } catch (RuntimeException e) {
                 if (e.getCause() instanceof ReturnException) {
                     return ( ( ReturnException ) e.getCause() ) .getValue();
+                }
+                if (e.getClass().isAssignableFrom( e.getCause().getClass() )) {
+                    return e.getCause();
                 }
                 throw e;
             }
