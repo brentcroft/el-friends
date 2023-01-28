@@ -1,10 +1,10 @@
 package com.brentcroft.tools.model;
 
+import com.brentcroft.tools.el.SimpleELResolver;
 import com.brentcroft.tools.el.ThreadLocalStackELResolver;
 import com.brentcroft.tools.jstl.JstlTemplateManager;
 import com.brentcroft.tools.jstl.MapBindings;
 
-import java.util.HashMap;
 import java.util.Map;
 
 public class ModelItem extends AbstractModelItem
@@ -14,7 +14,9 @@ public class ModelItem extends AbstractModelItem
     static {
         jstl
                 .getELTemplateManager()
-                .addResolver( new ThreadLocalStackELResolver( AbstractModelItem.scopeStack  ) );
+                .addResolvers(
+                        new ThreadLocalStackELResolver( AbstractModelItem.scopeStack  ),
+                        new SimpleELResolver( AbstractModelItem.staticModel  ));
     }
 
     @Override
@@ -25,14 +27,11 @@ public class ModelItem extends AbstractModelItem
 
     public Map< String, Object > newContainer()
     {
-        final Object local = getScopeStack().isEmpty()
-                ? new HashMap<>()
-                : getScopeStack().peek();
         MapBindings bindings = new MapBindings(this);
-        bindings.put( "$local", local );
+        bindings.put( "$local", AbstractModelItem.scopeStack.get().peek() );
         bindings.put( "$self", this );
         bindings.put( "$parent", getParent() );
-        bindings.put( "$static", getStaticModel() );
+        bindings.put( "$static", AbstractModelItem.staticModel );
         return bindings;
     }
 

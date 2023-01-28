@@ -45,7 +45,7 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
 
 
     private static final ThreadLocal< Stack< Path > > pathStack = ThreadLocal.withInitial( Stack::new );
-    private static final Map< String, Object > staticModel = new LinkedHashMap<>();
+    protected static final Map< String, Object > staticModel = new LinkedHashMap<>();
     protected static final ThreadLocal< Stack<Map<String, Object>> > scopeStack = ThreadLocal.withInitial( () -> {
         Stack<Map<String, Object>> s = new Stack<>();
         Map<String, Object> local = new HashMap<>();
@@ -94,15 +94,7 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
     private String name = "?";
     private Map< String, Object > parent;
 
-    /**
-     * First checks the scope stack,
-     *  then checks the current item,
-     *  then checks the parent
-     *  and finally checks the static model.
-     *
-     * @param key the registered name of the object
-     * @return the object registered with the key
-     */
+
     public Object get( Object key )
     {
         if (key == null) {
@@ -111,13 +103,7 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
         return Optional
                 .ofNullable( super.get( key ) )
                 .map( p -> p instanceof String ? expand( ( String ) p ) : p )
-//                .orElseGet( () -> Optional
-//                    .ofNullable( getParent() )
-//                    .map( p -> {
-//                        Object v = p.get( key );
-//                        return v instanceof String ? expand( ( String ) v ) : v;
-//                    } )
-                    .orElse( staticModel.get( key ) );
+                .orElse( null );
     }
 
     public Object put( String key, Object value )
@@ -142,9 +128,7 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
         {
             return staticModel.get( key );
         }
-        Object oldValue = getRoot().set( key, value );
-        staticModel.put( key, get( key ) );
-        return oldValue;
+        return staticModel.put( key, value );
     }
 
     public Map< String, Object > getStaticModel()
