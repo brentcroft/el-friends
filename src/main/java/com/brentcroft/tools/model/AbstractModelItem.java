@@ -19,6 +19,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -426,13 +427,13 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
 
                 return lastResult[0];
 
-
             } catch (RuntimeException e) {
-                if (e.getCause() instanceof ReturnException) {
-                    return ( ( ReturnException ) e.getCause() ) .getValue();
+                if (e.getCause() instanceof Supplier ) {
+                    return ( ( Supplier<?> ) e.getCause() ).get();
                 }
-                if (e.getClass().isAssignableFrom( e.getCause().getClass() )) {
-                    return e.getCause();
+                // reduce nested exceptions
+                if (e.getCause() != null && e.getClass().isAssignableFrom( e.getCause().getClass() )) {
+                    throw (RuntimeException)e.getCause();
                 }
                 throw e;
             }

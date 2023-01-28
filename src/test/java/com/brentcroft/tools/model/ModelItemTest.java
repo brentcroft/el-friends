@@ -2,7 +2,6 @@ package com.brentcroft.tools.model;
 
 import com.brentcroft.tools.materializer.TagValidationException;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.xml.sax.InputSource;
 

@@ -326,8 +326,11 @@ public interface Model extends Map< String, Object >
                 }
                 return test;
             } catch (Exception e) {
-                if (e.getCause() instanceof ReturnException) {
-                    throw (ReturnException)e.getCause();
+                if (e.getCause() instanceof Supplier) {
+                    Object value = ((Supplier<?>)e.getCause()).get();
+                    if (value instanceof Boolean) {
+                        return (Boolean)value;
+                    }
                 }
                 notifyModelEvent(
                         ModelEvent
@@ -347,8 +350,8 @@ public interface Model extends Map< String, Object >
                 try {
                     eval( expand( op ) );
                 } catch (Exception e) {
-                    if (e.getCause() instanceof ReturnException) {
-                        throw (ReturnException)e.getCause();
+                    if (e.getCause() instanceof Supplier) {
+                        throw (RuntimeException)e.getCause();
                     }
                     notifyModelEvent(
                             ModelEvent
