@@ -14,8 +14,11 @@ public class ModelItem extends AbstractModelItem
     static {
         jstl
                 .getELTemplateManager()
-                .addResolvers(
-                        new ThreadLocalStackELResolver( AbstractModelItem.scopeStack  ),
+                .addPrimaryResolvers(
+                        new ThreadLocalStackELResolver( AbstractModelItem.scopeStack  ));
+        jstl
+                .getELTemplateManager()
+                .addSecondaryResolvers(
                         new SimpleELResolver( AbstractModelItem.staticModel  ));
     }
 
