@@ -258,7 +258,7 @@ public class ModelItemTest
 
         assertEquals(3, item.get( "level" ));
 
-        item.getItem( "incrementer" ).run();
+        item.eval( "incrementer.run()" );
 
         System.out.println(item.toJson());
 
@@ -277,7 +277,7 @@ public class ModelItemTest
         item.steps( "$self.level = level + 1; $self.level = level + 1; $self.level = level + 1; " );
         assertEquals(6L, item.get( "level" ));
 
-        item.getItem( "incrementer" ).run();
+        item.getItem( "incrementer" ).call( "$$run" );
         assertEquals(7L, item.get( "level" ));
 
         item.steps( "incrementer.run(); incrementer.run(); incrementer.run(); " );

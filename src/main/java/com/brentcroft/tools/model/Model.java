@@ -117,10 +117,6 @@ public interface Model extends Map< String, Object >
         return call( key, new HashMap<>() );
     }
 
-    default Object run(){
-        return call( "$$run" );
-    }
-
     String toJson();
 
     Model getSelf();

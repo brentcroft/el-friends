@@ -1,5 +1,7 @@
 package com.brentcroft.tools.model;
 
+import com.brentcroft.tools.el.ELTemplateManager;
+import com.brentcroft.tools.el.Parented;
 import com.brentcroft.tools.el.SimpleELResolver;
 import com.brentcroft.tools.el.ThreadLocalStackELResolver;
 import com.brentcroft.tools.jstl.JstlTemplateManager;
@@ -7,19 +9,19 @@ import com.brentcroft.tools.jstl.MapBindings;
 
 import java.util.Map;
 
-public class ModelItem extends AbstractModelItem
+public class ModelItem extends AbstractModelItem implements Parented
 {
     private static final JstlTemplateManager jstl = new JstlTemplateManager();
 
     static {
-        jstl
-                .getELTemplateManager()
-                .addPrimaryResolvers(
-                        new ThreadLocalStackELResolver( AbstractModelItem.scopeStack  ));
-        jstl
-                .getELTemplateManager()
-                .addSecondaryResolvers(
-                        new SimpleELResolver( AbstractModelItem.staticModel  ));
+        ELTemplateManager el = jstl
+                .getELTemplateManager();
+
+        el.addPrimaryResolvers(
+                new ThreadLocalStackELResolver( el, el, AbstractModelItem.scopeStack  ));
+
+        el.addSecondaryResolvers(
+                new SimpleELResolver( AbstractModelItem.staticModel  ));
     }
 
     @Override
