@@ -248,6 +248,17 @@ public class ModelItemTest
         assertEquals( Collections.emptyList(), actual );
     }
 
+
+    @Test
+    public void usesNativeWhileDo() {
+        item
+                .appendFromJson( "{ digits: [ 'a', 'b', 'c', '3', '5', '6', '7', '8', '9' ] }" );
+        item
+                .steps( "$self.whileDo( () -> digits.size() > 0, () -> digits.remove( digits[0] ), 12)" );
+        Object actual = item.eval( "digits" );
+        assertEquals( Collections.emptyList(), actual );
+    }
+
     @Test
     public void usesModelSteps() {
         item
