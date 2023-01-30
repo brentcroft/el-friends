@@ -1,9 +1,6 @@
 package com.brentcroft.tools.model;
 
-import com.brentcroft.tools.el.ELTemplateManager;
-import com.brentcroft.tools.el.Parented;
-import com.brentcroft.tools.el.SimpleMapELResolver;
-import com.brentcroft.tools.el.ThreadLocalStackELResolver;
+import com.brentcroft.tools.el.*;
 import com.brentcroft.tools.jstl.JstlTemplateManager;
 import com.brentcroft.tools.jstl.MapBindings;
 
@@ -22,6 +19,7 @@ public class ModelItem extends AbstractModelItem implements Parented
                 new ThreadLocalStackELResolver( el, el, AbstractModelItem.scopeStack ) );
 
         el.addSecondaryResolvers(
+                new ConditionalMethodsELResolver(el.getELContextFactory(), AbstractModelItem.scopeStack),
                 new SimpleMapELResolver( AbstractModelItem.staticModel ) );
     }
 
