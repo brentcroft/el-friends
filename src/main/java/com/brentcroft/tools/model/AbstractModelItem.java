@@ -47,9 +47,9 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
 
     private static final ThreadLocal< Stack< Path > > pathStack = ThreadLocal.withInitial( Stack::new );
     protected static final Map< String, Object > staticModel = new LinkedHashMap<>();
-    protected static final ThreadLocal< Stack<Map<String, Object>> > scopeStack = ThreadLocal.withInitial( () -> {
-        Stack<Map<String, Object>> s = new Stack<>();
-        Map<String, Object> local = new HashMap<>();
+    protected static final ThreadLocal< Stack< Map< String, Object > > > scopeStack = ThreadLocal.withInitial( () -> {
+        Stack< Map< String, Object > > s = new Stack<>();
+        Map< String, Object > local = new HashMap<>();
         // allow assignment in EL
         local.put( "$local", local );
         s.push( local );
@@ -64,17 +64,22 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
         JSON_MAPPER.setSerializationInclusion( JsonInclude.Include.NON_EMPTY );
     }
 
-    public static String stringify(Object value) {
-        try {
+    public static String stringify( Object value )
+    {
+        try
+        {
             return JSON_MAPPER
                     .writerWithDefaultPrettyPrinter()
                     .writeValueAsString( value );
-        } catch (JsonProcessingException e) {
-            throw new ModelException(format("Bad stringification: %s", value), e);
+        }
+        catch ( JsonProcessingException e )
+        {
+            throw new ModelException( format( "Bad stringification: %s", value ), e );
         }
     }
 
-    public Stack<Map<String, Object>> getScopeStack() {
+    public Stack< Map< String, Object > > getScopeStack()
+    {
         return scopeStack.get();
     }
 
@@ -98,7 +103,8 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
 
     public Object get( Object key )
     {
-        if (key == null) {
+        if ( key == null )
+        {
             return null;
         }
         return Optional
@@ -119,7 +125,8 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
     /**
      * Bypasses checking for Models and calls super.put(key, value).
      */
-    public Object set(String key, Object value) {
+    public Object set( String key, Object value )
+    {
         return super.put( key, value );
     }
 
@@ -144,9 +151,9 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
                 .map( Paths::get )
                 .orElseGet( () -> Optional
                         .ofNullable( getParent() )
-                        .filter( p -> p instanceof Model)
-                        .map( p -> ((Model)p).getCurrentDirectory())
-                        .orElse( Paths.get( "." ) ));
+                        .filter( p -> p instanceof Model )
+                        .map( p -> ( ( Model ) p ).getCurrentDirectory() )
+                        .orElse( Paths.get( "." ) ) );
     }
 
     public void setCurrentDirectory( Path directoryPath )
@@ -208,7 +215,7 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
             }
             catch ( FileNotFoundException e )
             {
-                throw new ModelException( format("Bad $xml value: %s", xmlValue), e );
+                throw new ModelException( format( "Bad $xml value: %s", xmlValue ), e );
             }
             finally
             {
@@ -364,15 +371,16 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
     }
 
     @Override
-    public Object steps( String steps, Map<String, Object> argMap )
+    public Object steps( String steps, Map< String, Object > argMap )
     {
         return new Steps( steps ).run( argMap );
     }
 
-    public void maybeDelay() {
+    public void maybeDelay()
+    {
         try
         {
-            long delay = (long) getOrDefault( OPERATION_DELAY_MILLIS, 100L );
+            long delay = ( long ) getOrDefault( OPERATION_DELAY_MILLIS, 100L );
             Thread.sleep( delay );
         }
         catch ( InterruptedException e )
@@ -390,7 +398,7 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
             this.steps = steps;
         }
 
-        public Object run(Map<String, Object> argMap)
+        public Object run( Map< String, Object > argMap )
         {
             scopeStack.get().push( argMap );
 
@@ -411,7 +419,7 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
                                         AbstractModelItem.this,
                                         format( "%s%s (inline)", indent, modelPath.isEmpty() ? "" : ( modelPath + ":" ) ) ) );
 
-                Object[] lastResult = {null};
+                Object[] lastResult = { null };
 
                 Model
                         .stepsStream( steps )
@@ -423,17 +431,21 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
                                                 AbstractModelItem.this,
                                                 format( "%s -> %s", indent, step ) ) ) )
                         .map( AbstractModelItem.this::expand )
-                        .forEach( step -> lastResult[0] = eval(step) );
+                        .forEach( step -> lastResult[ 0 ] = eval( step ) );
 
-                return lastResult[0];
+                return lastResult[ 0 ];
 
-            } catch (RuntimeException e) {
-                if (e.getCause() instanceof Supplier ) {
-                    return ( ( Supplier<?> ) e.getCause() ).get();
+            }
+            catch ( RuntimeException e )
+            {
+                if ( e.getCause() instanceof Supplier )
+                {
+                    return ( ( Supplier< ? > ) e.getCause() ).get();
                 }
                 // reduce nested exceptions
-                if (e.getCause() != null && e.getClass().isAssignableFrom( e.getCause().getClass() )) {
-                    throw (RuntimeException)e.getCause();
+                if ( e.getCause() != null && e.getClass().isAssignableFrom( e.getCause().getClass() ) )
+                {
+                    throw ( RuntimeException ) e.getCause();
                 }
                 throw e;
             }

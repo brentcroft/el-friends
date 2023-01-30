@@ -17,21 +17,26 @@ import static java.util.Objects.nonNull;
 public interface Model extends Map< String, Object >
 {
     Expander getExpander();
+
     Evaluator getEvaluator();
 
-    default void notifyModelEvent( ModelEvent modelEvent) {
+    default void notifyModelEvent( ModelEvent modelEvent )
+    {
         System.out.printf(
                 "%s%n",
 //                modelEvent.getSource(),
 //                modelEvent.getEventType(),
-                modelEvent.getMessage());
+                modelEvent.getMessage() );
     }
 
 
-    Object set(String key, Object value);
-    Object putStatic( String key, Object value);
-    Map<String,Object> getStaticModel();
-    Stack<Map<String, Object>> getScopeStack();
+    Object set( String key, Object value );
+
+    Object putStatic( String key, Object value );
+
+    Map< String, Object > getStaticModel();
+
+    Stack< Map< String, Object > > getScopeStack();
 
     /**
      * Expands a value using the expander
@@ -42,10 +47,10 @@ public interface Model extends Map< String, Object >
      */
     default String expand( String value )
     {
-        final Map<String, Object> bindings = newContainer();
+        final Map< String, Object > bindings = newContainer();
         return Optional
-                .ofNullable(getExpander())
-                .map(exp -> exp.apply( value, bindings ) )
+                .ofNullable( getExpander() )
+                .map( exp -> exp.apply( value, bindings ) )
                 .orElse( value );
     }
 
@@ -58,62 +63,69 @@ public interface Model extends Map< String, Object >
      */
     default Object eval( String value )
     {
-        final Map<String, Object> bindings = newContainer();
+        final Map< String, Object > bindings = newContainer();
 
         return Optional
                 .ofNullable( getEvaluator() )
                 .map( evaluator -> {
-                    Object[] lastResult = {null};
+                    Object[] lastResult = { null };
                     Model
                             .stepsStream( value )
-                            .forEach( step -> lastResult[0] = getEvaluator().apply( step, bindings ) );
-                    return lastResult[0];
+                            .forEach( step -> lastResult[ 0 ] = getEvaluator().apply( step, bindings ) );
+                    return lastResult[ 0 ];
                 } )
                 .orElse( null );
     }
 
     Map< String, Object > newContainer();
 
-    static Stream<String> stepsStream(String value) {
+    static Stream< String > stepsStream( String value )
+    {
         String uncommented = Stream
-                .of(value.split( "\\s*[\\n\\r]+\\s*" ))
-                .filter( v -> !v.isEmpty() && !v.startsWith( "#" ) )
+                .of( value.split( "\\s*[\\n\\r]+\\s*" ) )
+                .filter( v -> ! v.isEmpty() && ! v.startsWith( "#" ) )
                 .map( String::trim )
-                .collect( Collectors.joining(" "));
+                .collect( Collectors.joining( " " ) );
         return Stream
-                .of(uncommented.split( "\\s*[;]+\\s*" ));
+                .of( uncommented.split( "\\s*[;]+\\s*" ) );
     }
 
-    static String stepsText(Object text) {
+    static String stepsText( Object text )
+    {
         return text instanceof Collection
-            ? ((Collection<?>)text)
-                   .stream()
-                   .filter( Objects::nonNull )
-                   .map( Object::toString )
-                   .collect( Collectors.joining(";\n"))
-           : text.toString();
-    }
-    static List<String> stepsList(Object list) {
-        return list instanceof Collection
-               ? ((Collection<?>)list)
+               ? ( ( Collection< ? > ) text )
                        .stream()
                        .filter( Objects::nonNull )
                        .map( Object::toString )
-                       .collect( Collectors.toList())
+                       .collect( Collectors.joining( ";\n" ) )
+               : text.toString();
+    }
+
+    static List< String > stepsList( Object list )
+    {
+        return list instanceof Collection
+               ? ( ( Collection< ? > ) list )
+                       .stream()
+                       .filter( Objects::nonNull )
+                       .map( Object::toString )
+                       .collect( Collectors.toList() )
                : Collections.singletonList( list.toString() );
     }
 
-    Object steps(String steps, Map< String, Object > args);
+    Object steps( String steps, Map< String, Object > args );
 
-    default Object steps(String steps) {
+    default Object steps( String steps )
+    {
         return steps( steps, new HashMap<>() );
     }
 
-    default Object call(String key, Map< String, Object > args) {
-        return steps( (String) get(key), args );
+    default Object call( String key, Map< String, Object > args )
+    {
+        return steps( ( String ) get( key ), args );
     }
 
-    default Object call(String key ){
+    default Object call( String key )
+    {
         return call( key, new HashMap<>() );
     }
 
@@ -139,7 +151,7 @@ public interface Model extends Map< String, Object >
 
     void introspectEntries();
 
-    File getLocalFile(String filePath);
+    File getLocalFile( String filePath );
 
     void filteredPutAll( Map< ? extends String, ? > item );
 
@@ -172,7 +184,8 @@ public interface Model extends Map< String, Object >
         return this;
     }
 
-    default Model appendFromXml( InputSource inputSource ) {
+    default Model appendFromXml( InputSource inputSource )
+    {
         Model item = newItem();
         item.setParent( this );
         Materializer< Model > materializer = new Materializer<>(
@@ -188,7 +201,7 @@ public interface Model extends Map< String, Object >
      * assigns to this using the supplied key
      * and then returns this;
      *
-     * @param key the child reference
+     * @param key      the child reference
      * @param jsonText JSON text to construct a new Model
      * @return this
      */
@@ -212,7 +225,7 @@ public interface Model extends Map< String, Object >
 
     /**
      * Navigate the supplied object path starting from this.
-     *
+     * <p>
      * Uses <code>eval( path )</code> and raises an exception if the result is not a Model
      *
      * @param path an object path
@@ -238,7 +251,7 @@ public interface Model extends Map< String, Object >
      * The object path to this item relative to the root item,
      * being the concatenation of the names of the ancestors
      * and this item separated by periods.
-     *
+     * <p>
      * The root item is not included in any path.
      *
      * @return the object path to this Model item
@@ -250,7 +263,7 @@ public interface Model extends Map< String, Object >
                 .ofNullable( getParent() )
                 .filter( p -> p instanceof Model )
                 .map( p -> ( Model ) p )
-                .map( p -> ( nonNull( p.getParent() ) ? format("%s.%s", p.path(), getName()) : getName())  )
+                .map( p -> ( nonNull( p.getParent() ) ? format( "%s.%s", p.path(), getName() ) : getName() ) )
                 .orElse( "" );
     }
 
@@ -293,101 +306,131 @@ public interface Model extends Map< String, Object >
         }
     }
 
-    default Model tryExcept( Object operation, Object onExceptionOperations) {
-        String ops = stepsText(operation);
-        String exOps = stepsText(onExceptionOperations);
-        try {
+    default Model tryExcept( Object operation, Object onExceptionOperations )
+    {
+        String ops = stepsText( operation );
+        String exOps = stepsText( onExceptionOperations );
+        try
+        {
             steps( ops );
-        } catch (Exception e) {
-            System.out.printf( "Handling exception: [%s]: %s%n", e.getClass().getSimpleName(), e.getMessage());
-            Map<String, Object> local = new HashMap<>();
+        }
+        catch ( Exception e )
+        {
+            System.out.printf( "Handling exception: [%s]: %s%n", e.getClass().getSimpleName(), e.getMessage() );
+            Map< String, Object > local = new HashMap<>();
             local.put( "exception", e );
             steps( exOps, local );
         }
         return this;
     }
 
-    default Model whileDo( String booleanTest, Object operation, int maxTries ) {
-        int[] tries = {0};
-        List<String> ops = stepsList(operation);
-        Supplier<Boolean> whileTest = () ->  {
-            try {
-                boolean test = (Boolean)eval( expand( booleanTest ) );
-                if (tries[0] > 0 || !test) {
+    default Model whileDo( String booleanTest, Object operation, int maxTries )
+    {
+        int[] tries = { 0 };
+        List< String > ops = stepsList( operation );
+        Supplier< Boolean > whileTest = () -> {
+            try
+            {
+                boolean test = ( Boolean ) eval( expand( booleanTest ) );
+                if ( tries[ 0 ] > 0 || ! test )
+                {
                     notifyModelEvent(
                             ModelEvent
                                     .EventType
                                     .WHILE_DO_TEST
-                                    .newEvent(this,format("whileDo [%d]: test: '%s' == %s", tries[0], booleanTest, test ) ) );
+                                    .newEvent( this, format( "whileDo [%d]: test: '%s' == %s", tries[ 0 ], booleanTest, test ) ) );
                 }
                 return test;
-            } catch (Exception e) {
-                if (e.getCause() instanceof Supplier) {
-                    Object value = ((Supplier<?>)e.getCause()).get();
-                    if (value instanceof Boolean) {
-                        return (Boolean)value;
+            }
+            catch ( Exception e )
+            {
+                if ( e.getCause() instanceof Supplier )
+                {
+                    Object value = ( ( Supplier< ? > ) e.getCause() ).get();
+                    if ( value instanceof Boolean )
+                    {
+                        return ( Boolean ) value;
                     }
                 }
                 notifyModelEvent(
                         ModelEvent
                                 .EventType
                                 .WHILE_DO_TEST
-                                .newEvent(this, format(
+                                .newEvent( this, format(
                                         "whileDo: test [%d: %s]; [%s] %s",
-                                        tries[0], booleanTest,
+                                        tries[ 0 ], booleanTest,
                                         e.getClass().getSimpleName(),
                                         e.getMessage() ) ) );
                 return true;
             }
         };
-        while (whileTest.get() && tries[0] < maxTries) {
-            tries[0]++;
+        while ( whileTest.get() && tries[ 0 ] < maxTries )
+        {
+            tries[ 0 ]++;
             ops.forEach( op -> {
-                try {
+                try
+                {
                     eval( expand( op ) );
-                } catch (Exception e) {
-                    if (e.getCause() instanceof Supplier) {
-                        throw (RuntimeException)e.getCause();
+                }
+                catch ( Exception e )
+                {
+                    if ( e.getCause() instanceof Supplier )
+                    {
+                        throw ( RuntimeException ) e.getCause();
                     }
                     notifyModelEvent(
                             ModelEvent
                                     .EventType
                                     .WHILE_DO_OPERATION
-                                    .newEvent(this, format(
+                                    .newEvent( this, format(
                                             "whileDo: operation [%d: %s]; [%s] %s",
-                                            tries[0], op,
+                                            tries[ 0 ], op,
                                             e.getClass().getSimpleName(),
                                             e.getMessage() ) ) );
                 }
             } );
         }
-        if ( tries[0] >= maxTries ) {
-            throw new RanOutOfTriesException(tries[0], booleanTest);
+        if ( tries[ 0 ] >= maxTries )
+        {
+            throw new RanOutOfTriesException( tries[ 0 ], booleanTest );
         }
         return this;
     }
 
-    default Model whileDoAll( String booleanTest, List<String> operations, int maxTries ) {
-        return whileDo( booleanTest, operations, maxTries);
+    default Model whileDoAll( String booleanTest, List< String > operations, int maxTries )
+    {
+        return whileDo( booleanTest, operations, maxTries );
     }
 
-    default Model ifThen( String booleanTest, Object thenOps) {
-        if ((Boolean)eval(expand(booleanTest))) {
-            steps(stepsText(thenOps));
+    default Model ifThen( String booleanTest, Object thenOps )
+    {
+        if ( ( Boolean ) eval( expand( booleanTest ) ) )
+        {
+            steps( stepsText( thenOps ) );
         }
         return this;
     }
 
-    default Model ifThenElse( String booleanTest, Object thenOps, Object elseOps) {
-        if ((Boolean)eval(expand(booleanTest))) {
-            steps(stepsText(thenOps));
-        } else {
-            steps(stepsText(elseOps));
+    default Model ifThenElse( String booleanTest, Object thenOps, Object elseOps )
+    {
+        if ( ( Boolean ) eval( expand( booleanTest ) ) )
+        {
+            steps( stepsText( thenOps ) );
+        }
+        else
+        {
+            steps( stepsText( elseOps ) );
         }
         return this;
     }
 
     void maybeDelay();
-    interface Expander extends BiFunction<String, Map<String, Object>, String> {}
-    interface Evaluator extends BiFunction<String, Map<String, Object>, Object> {}
+
+    interface Expander extends BiFunction< String, Map< String, Object >, String >
+    {
+    }
+
+    interface Evaluator extends BiFunction< String, Map< String, Object >, Object >
+    {
+    }
 }

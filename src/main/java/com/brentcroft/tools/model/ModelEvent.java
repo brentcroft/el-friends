@@ -21,11 +21,14 @@ public class ModelEvent
         STEPS_START,
         STEP_START;
 
-        public ModelEvent newEvent(Model source, String message) {
-            return newEvent(source, message, null);
+        public ModelEvent newEvent( Model source, String message )
+        {
+            return newEvent( source, message, null );
         }
-        public ModelEvent newEvent(Model source, String message, Throwable exception) {
-            return new ModelEvent(this, source, message, exception);
+
+        public ModelEvent newEvent( Model source, String message, Throwable exception )
+        {
+            return new ModelEvent( this, source, message, exception );
         }
     }
 }

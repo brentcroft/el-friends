@@ -27,11 +27,12 @@ public class ModelInspectorDialog extends JDialog implements ActionListener, Tre
     private final JTextPane resultText;
     private final JButton evalButton;
 
-    static {
+    static
+    {
         String lookAndFeel = UIManager.getSystemLookAndFeelClassName();
         try
         {
-            UIManager.setLookAndFeel(lookAndFeel);
+            UIManager.setLookAndFeel( lookAndFeel );
         }
         catch ( ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e )
         {
@@ -39,60 +40,61 @@ public class ModelInspectorDialog extends JDialog implements ActionListener, Tre
         }
     }
 
-    public ModelInspectorDialog( Map< String, ? > model) {
+    public ModelInspectorDialog( Map< String, ? > model )
+    {
         setTitle( "Model Inspector" );
         setBounds( 300, 90, 900, 600 );
         setDefaultCloseOperation( DISPOSE_ON_CLOSE );
         setResizable( true );
 
         Container container = getContentPane();
-        container.setLayout(new BorderLayout());
+        container.setLayout( new BorderLayout() );
 
         Map< String, ? > root = model instanceof Model
-                                ? ((Model)model).getRoot()
+                                ? ( ( Model ) model ).getRoot()
                                 : model;
 
         this.model = model instanceof Model
-                     ? ((Model)model)
+                     ? ( ( Model ) model )
                      : null;
 
         DefaultMutableTreeNode top = new DefaultMutableTreeNode( root );
         buildChildNodes( root, top, new IdentityHashMap<>() );
-        modelTree = new JTree(top);
-        modelTree.addTreeSelectionListener(this);
+        modelTree = new JTree( top );
+        modelTree.addTreeSelectionListener( this );
         modelLabel = new JTextArea();
         //modelLabel.setEnabled( false );
         modelLabel.setEditable( false );
 
 
-        JSplitPane topPanel = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+        JSplitPane topPanel = new JSplitPane( JSplitPane.HORIZONTAL_SPLIT );
 
-        JSplitPane leftPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-        leftPane.setTopComponent( new JScrollPane(modelTree) );
-        leftPane.setBottomComponent( new JScrollPane(modelLabel) );
+        JSplitPane leftPane = new JSplitPane( JSplitPane.VERTICAL_SPLIT );
+        leftPane.setTopComponent( new JScrollPane( modelTree ) );
+        leftPane.setBottomComponent( new JScrollPane( modelLabel ) );
 
         topPanel.setLeftComponent( leftPane );
 
-        JLabel elLabel = new JLabel("EL expression:");
+        JLabel elLabel = new JLabel( "EL expression:" );
         stepsText = new JTextPane();
-        JLabel resultLabel = new JLabel("Result:");
+        JLabel resultLabel = new JLabel( "Result:" );
         resultText = new JTextPane();
 
-        evalButton = new JButton("Eval");
+        evalButton = new JButton( "Eval" );
         evalButton.addActionListener( this );
-        JPanel toolbarPanel = new JPanel(new BorderLayout());
+        JPanel toolbarPanel = new JPanel( new BorderLayout() );
         toolbarPanel.add( evalButton, BorderLayout.EAST );
 
-        JPanel stepsPanel = new JPanel(new BorderLayout());
+        JPanel stepsPanel = new JPanel( new BorderLayout() );
         stepsPanel.add( elLabel, BorderLayout.NORTH );
-        stepsPanel.add( new JScrollPane(stepsText), BorderLayout.CENTER );
-        stepsPanel.add(toolbarPanel, BorderLayout.SOUTH) ;
+        stepsPanel.add( new JScrollPane( stepsText ), BorderLayout.CENTER );
+        stepsPanel.add( toolbarPanel, BorderLayout.SOUTH );
 
-        JPanel resultsPanel = new JPanel(new BorderLayout());
+        JPanel resultsPanel = new JPanel( new BorderLayout() );
         resultsPanel.add( resultLabel, BorderLayout.NORTH );
-        resultsPanel.add( new JScrollPane(resultText), BorderLayout.CENTER );
+        resultsPanel.add( new JScrollPane( resultText ), BorderLayout.CENTER );
 
-        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+        JSplitPane splitPane = new JSplitPane( JSplitPane.VERTICAL_SPLIT );
         splitPane.setTopComponent( stepsPanel );
         splitPane.setBottomComponent( resultsPanel );
 
@@ -101,91 +103,114 @@ public class ModelInspectorDialog extends JDialog implements ActionListener, Tre
         container.add( topPanel );
     }
 
-    private String getDollarFields( Model model) {
+    private String getDollarFields( Model model )
+    {
         return model
                 .entrySet()
                 .stream()
-                .filter( e -> e.getKey().startsWith( "$" ) && !e.getKey().startsWith( "$shadow" )  && !e.getKey().startsWith( "$$" ) )
+                .filter( e -> e.getKey().startsWith( "$" ) && ! e.getKey().startsWith( "$shadow" ) && ! e.getKey().startsWith( "$$" ) )
                 .sorted( Map.Entry.comparingByKey() )
-                .map( e -> format("%s: %s%n",
+                .map( e -> format( "%s: %s%n",
                         e.getKey(),
                         e.getValue()
                                 .toString()
-                                .replaceAll( "\\s*[\\r\\n]+\\s*", " " )) )
-                .collect( Collectors.joining());
+                                .replaceAll( "\\s*[\\r\\n]+\\s*", " " ) ) )
+                .collect( Collectors.joining() );
     }
 
-    private void selectModelNode(ModelNode modelNode) {
+    private void selectModelNode( ModelNode modelNode )
+    {
         this.model = modelNode.getAncestorModel();
-        if (modelNode.getModel() instanceof Model) {
-            modelLabel.setText( format("%s",getDollarFields( model )) );
+        if ( modelNode.getModel() instanceof Model )
+        {
+            modelLabel.setText( format( "%s", getDollarFields( model ) ) );
             stepsText.setText( modelNode.getKey() );
-        } else if (modelNode.getKey().startsWith( "$$" )) {
-            modelLabel.setText( format("%s", modelNode.getKey()) );
+        }
+        else if ( modelNode.getKey().startsWith( "$$" ) )
+        {
+            modelLabel.setText( format( "%s", modelNode.getKey() ) );
             stepsText.setText( modelNode.getModel().toString() );
-        } else {
-            modelLabel.setText( format("%s", modelNode.getModel()) );
+        }
+        else
+        {
+            modelLabel.setText( format( "%s", modelNode.getModel() ) );
         }
     }
 
     @Override
     public void valueChanged( TreeSelectionEvent e )
     {
-        DefaultMutableTreeNode node = (DefaultMutableTreeNode)
+        DefaultMutableTreeNode node = ( DefaultMutableTreeNode )
                 modelTree.getLastSelectedPathComponent();
-        if (node == null) {
+        if ( node == null )
+        {
             return;
         }
         Object nodeInfo = node.getUserObject();
-        if (nodeInfo instanceof ModelNode) {
-            ModelNode modelNode = (ModelNode)nodeInfo;
-            selectModelNode(modelNode);
+        if ( nodeInfo instanceof ModelNode )
+        {
+            ModelNode modelNode = ( ModelNode ) nodeInfo;
+            selectModelNode( modelNode );
         }
     }
 
     @Getter
     @Setter
     @AllArgsConstructor
-    public static class ModelNode {
+    public static class ModelNode
+    {
         private final Object parent;
         private final String key;
         private final Object model;
 
-        public String toString() {
-            return format("%s", key);
+        public String toString()
+        {
+            return format( "%s", key );
         }
 
-        public boolean isMap() {
+        public boolean isMap()
+        {
             return model instanceof Map;
         }
 
-        public boolean isModel() {
+        public boolean isModel()
+        {
             return model instanceof Model;
         }
 
         @SuppressWarnings( "unchecked" )
-        public Map<String, ?> getMap() {
-            return (Map<String, ?>)model;
+        public Map< String, ? > getMap()
+        {
+            return ( Map< String, ? > ) model;
         }
 
         public Model getAncestorModel()
         {
-            if (model instanceof Model) {
-                return (Model)model;
-            } else if (parent instanceof ModelNode) {
-                return ((ModelNode)parent).getAncestorModel();
-            } else {
+            if ( model instanceof Model )
+            {
+                return ( Model ) model;
+            }
+            else if ( parent instanceof ModelNode )
+            {
+                return ( ( ModelNode ) parent ).getAncestorModel();
+            }
+            else
+            {
                 return null;
             }
         }
     }
 
     @SuppressWarnings( "unchecked" )
-    private void buildChildNodes( Map<String, ?> model, DefaultMutableTreeNode parent, IdentityHashMap<Object,Object> alreadySeen) {
-        if (alreadySeen.containsKey( model )) {
-            System.out.printf( "already seen: %s%n", model);
+    private void buildChildNodes( Map< String, ? > model, DefaultMutableTreeNode parent, IdentityHashMap< Object, Object > alreadySeen )
+    {
+        if ( alreadySeen.containsKey( model ) )
+        {
+            System.out.printf( "already seen: %s%n", model );
             return;
-        } else {
+        }
+        else
+        {
             alreadySeen.put( model, null );
         }
         model
@@ -196,12 +221,12 @@ public class ModelInspectorDialog extends JDialog implements ActionListener, Tre
                     String key = e.getKey();
                     Object value = e.getValue();
                     DefaultMutableTreeNode node;
-                    if (key.startsWith( "$" ) && !key.startsWith( "$shadow" ) && !key.startsWith( "$$" ))
+                    if ( key.startsWith( "$" ) && ! key.startsWith( "$shadow" ) && ! key.startsWith( "$$" ) )
                     {
                         return;
                     }
-                    node = new DefaultMutableTreeNode( new ModelNode(parent.getUserObject(), key, value ) );
-                    if (value instanceof Map )
+                    node = new DefaultMutableTreeNode( new ModelNode( parent.getUserObject(), key, value ) );
+                    if ( value instanceof Map )
                     {
                         buildChildNodes( ( Map< String, ? > ) value, node, alreadySeen );
                     }
@@ -209,23 +234,31 @@ public class ModelInspectorDialog extends JDialog implements ActionListener, Tre
                 } );
     }
 
-    public void setSteps(String steps) {
+    public void setSteps( String steps )
+    {
         this.stepsText.setText( steps );
     }
 
     @Override
     public void actionPerformed( ActionEvent e )
     {
-        if (e.getSource() == evalButton) {
+        if ( e.getSource() == evalButton )
+        {
             String el = stepsText.getText();
-            try {
+            try
+            {
                 Object evalResult = model.eval( model.expand( el ) );
-                if (isNull(evalResult)) {
+                if ( isNull( evalResult ) )
+                {
                     resultText.setText( "null" );
-                } else {
+                }
+                else
+                {
                     resultText.setText( evalResult.toString() );
                 }
-            } catch (Exception ex) {
+            }
+            catch ( Exception ex )
+            {
                 resultText.setText( ex.toString() );
                 ex.printStackTrace();
             }
