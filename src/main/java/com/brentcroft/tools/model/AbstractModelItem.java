@@ -194,6 +194,8 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
         {
             Stream
                     .of(get( "$json" ).toString().split("\\s*,\\s*"))
+                    .map( String::trim )
+                    .filter( filename -> !filename.isEmpty())
                     .forEach( filename -> {
                         File file = getLocalFile( filename );
                         putOnFileStack( file.toPath() );
@@ -213,6 +215,8 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
             Object xmlValue = get( "$xml" );
             Stream
                     .of(xmlValue.toString().split("\\s*,\\s*"))
+                    .map( String::trim )
+                    .filter( filename -> !filename.isEmpty())
                     .forEach( filename -> {
                         File file = getLocalFile( filename );
                         putOnFileStack( file.toPath() );
@@ -233,11 +237,19 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
         }
         if ( containsKey( "$properties" ) )
         {
-            overwritePropertiesFromFile( get( "$properties" ).toString(), false );
+            Stream
+                    .of(get( "$properties" ).toString().split("\\s*,\\s*"))
+                    .map( String::trim )
+                    .filter( filename -> !filename.isEmpty())
+                    .forEach( filename -> overwritePropertiesFromFile( filename, false ) );
         }
         if ( containsKey( "$properties-xml" ) )
         {
-            overwritePropertiesFromFile( get( "$properties-xml" ).toString(), true );
+            Stream
+                    .of(get( "$properties-xml" ).toString().split("\\s*,\\s*"))
+                    .map( String::trim )
+                    .filter( filename -> !filename.isEmpty())
+                    .forEach( filename -> overwritePropertiesFromFile( filename, true ) );
         }
         if ( containsKey( "$onload" ) )
         {
