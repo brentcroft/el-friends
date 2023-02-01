@@ -22,6 +22,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static java.lang.String.format;
 
@@ -191,36 +192,44 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
     {
         if ( containsKey( "$json" ) )
         {
-            File file = getLocalFile( get( "$json" ).toString() );
-            putOnFileStack( file.toPath() );
-            try
-            {
-                setCurrentDirectory( file.getParentFile().toPath() );
-                appendFromJson( AbstractModelItem.readFileFully( file ) );
-            }
-            finally
-            {
-                pathStack.get().pop();
-            }
+            Stream
+                    .of(get( "$json" ).toString().split("\\s*,\\s*"))
+                    .forEach( filename -> {
+                        File file = getLocalFile( filename );
+                        putOnFileStack( file.toPath() );
+                        try
+                        {
+                            setCurrentDirectory( file.getParentFile().toPath() );
+                            appendFromJson( AbstractModelItem.readFileFully( file ) );
+                        }
+                        finally
+                        {
+                            pathStack.get().pop();
+                        }
+                    } );
         }
         if ( containsKey( "$xml" ) )
         {
             Object xmlValue = get( "$xml" );
-            File file = getLocalFile( xmlValue.toString() );
-            putOnFileStack( file.toPath() );
-            try
-            {
-                setCurrentDirectory( file.getParentFile().toPath() );
-                appendFromXml( new InputSource( new FileInputStream( file ) ) );
-            }
-            catch ( FileNotFoundException e )
-            {
-                throw new ModelException( format( "Bad $xml value: %s", xmlValue ), e );
-            }
-            finally
-            {
-                pathStack.get().pop();
-            }
+            Stream
+                    .of(xmlValue.toString().split("\\s*,\\s*"))
+                    .forEach( filename -> {
+                        File file = getLocalFile( filename );
+                        putOnFileStack( file.toPath() );
+                        try
+                        {
+                            setCurrentDirectory( file.getParentFile().toPath() );
+                            appendFromXml( new InputSource( new FileInputStream( file ) ) );
+                        }
+                        catch ( FileNotFoundException e )
+                        {
+                            throw new ModelException( format( "Bad $xml filename: %s", filename ), e );
+                        }
+                        finally
+                        {
+                            pathStack.get().pop();
+                        }
+                    } );
         }
         if ( containsKey( "$properties" ) )
         {
