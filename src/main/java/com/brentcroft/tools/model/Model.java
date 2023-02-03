@@ -5,6 +5,7 @@ import org.xml.sax.InputSource;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -188,6 +189,13 @@ public interface Model extends Map< String, Object >
     {
         Model item = newItem();
         item.setParent( this );
+
+        Optional
+                .ofNullable( inputSource.getSystemId() )
+                .map( Paths::get )
+                .map( Path::getParent )
+                .ifPresent( item::setCurrentDirectory );
+
         Materializer< Model > materializer = new Materializer<>(
                 () -> ModelRootTag.DOCUMENT_ROOT,
                 () -> item );

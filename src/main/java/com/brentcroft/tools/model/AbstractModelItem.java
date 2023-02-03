@@ -222,8 +222,9 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
                         putOnFileStack( file.toPath() );
                         try
                         {
-                            setCurrentDirectory( file.getParentFile().toPath() );
-                            appendFromXml( new InputSource( new FileInputStream( file ) ) );
+                            InputSource is = new InputSource( new FileInputStream( file ) );
+                            is.setSystemId( file.getAbsolutePath() );
+                            appendFromXml( is );
                         }
                         catch ( FileNotFoundException e )
                         {
@@ -305,6 +306,7 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
                 .filter( entry -> ! entry.getKey().startsWith( "$xml" ) )
                 .filter( entry -> ! entry.getKey().startsWith( "$properties" ) )
                 .filter( entry -> ! entry.getKey().startsWith( "$properties-xml" ) )
+                .filter( entry -> ! entry.getKey().startsWith( "$currentDirectory" ) )
                 .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) ) );
     }
 

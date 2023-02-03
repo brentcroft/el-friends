@@ -62,6 +62,8 @@ public class ModelInspectorDialog extends JDialog implements ActionListener, Tre
         buildChildNodes( root, top, new IdentityHashMap<>() );
         modelTree = new JTree( top );
         modelTree.addTreeSelectionListener( this );
+        modelTree.setRootVisible( true );
+
         modelLabel = new JTextArea();
         //modelLabel.setEnabled( false );
         modelLabel.setEditable( false );
