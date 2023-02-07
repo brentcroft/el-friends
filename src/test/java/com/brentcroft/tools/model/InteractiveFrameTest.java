@@ -21,7 +21,7 @@ public class InteractiveFrameTest
     @Ignore
     public void opensInteractiveFrame() {
         ModelInspectorDialog iframe = new ModelInspectorDialog( item );
-        iframe.setSteps( "c:println('hello world')" );
+        iframe.setSteps( "c:delay( 2000 ); c:println( 'hello world' )" );
         iframe.setModal( true );
         iframe.setVisible( true );
 
