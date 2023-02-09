@@ -18,15 +18,24 @@ public class ModelItem extends AbstractModelItem implements Parented
                 .getELTemplateManager();
 
         em.addPrimaryResolvers(
-                new ThreadLocalStackELResolver( em, em, AbstractModelItem.scopeStack ) );
+                new ThreadLocalStackELResolver(
+                        em,
+                        em,
+                        AbstractModelItem.scopeStack,
+                        AbstractModelItem.staticModel ) );
 
         em.addSecondaryResolvers(
-                new ConditionalMethodsELResolver(em.getELContextFactory(), AbstractModelItem.scopeStack),
-                new SimpleMapELResolver( AbstractModelItem.staticModel ) );
+                new ConditionalMethodsELResolver(
+                        em.getELContextFactory(),
+                        AbstractModelItem.scopeStack,
+                        AbstractModelItem.staticModel),
+                new SimpleMapELResolver(
+                        AbstractModelItem.staticModel ) );
 
         ImportHandler ih = em
                 .getELContextFactory()
                 .getImportHandler();
+
         ih.importClass( Collections.class.getTypeName() );
     }
 
