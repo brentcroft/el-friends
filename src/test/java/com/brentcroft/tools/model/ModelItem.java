@@ -18,10 +18,9 @@ public class ModelItem extends AbstractModelItem implements Parented
                 .getELTemplateManager();
 
         em.addPrimaryResolvers(
-                new ThreadLocalStackELResolver(
+                new MapStepsELResolver(
                         em,
                         em,
-                        AbstractModelItem.scopeStack,
                         AbstractModelItem.staticModel ) );
 
         em.addSecondaryResolvers(

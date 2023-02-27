@@ -5,7 +5,7 @@
 
 	<groupId>com.brentcroft.tools</groupId>
 	<artifactId>el-model</artifactId>
-	<version>01.01.24</version>
+	<version>01.01.26</version>
 
 	<name>Brentcroft EL Model</name>
 
@@ -38,11 +38,11 @@
 	</scm>
 
 	<properties>
+		<el-plates.version>01.02.23</el-plates.version>
+		<materializer.version>00.01.06</materializer.version>
 		<jackson.version>2.14.1</jackson.version>
 		<junit.version>4.13.2</junit.version>
 		<lombok.version>1.18.24</lombok.version>
-		<el-plates.version>01.02.16</el-plates.version>
-		<materializer.version>00.01.06</materializer.version>
 		<nexus-staging.version>1.6.13</nexus-staging.version>
 		<!-- -->
 		<maven.compiler.target>1.8</maven.compiler.target>
