@@ -38,7 +38,7 @@
 	</scm>
 
 	<properties>
-		<el-plates.version>01.02.23</el-plates.version>
+		<el-plates.version>01.02.24</el-plates.version>
 		<materializer.version>00.01.06</materializer.version>
 		<jackson.version>2.14.1</jackson.version>
 		<junit.version>4.13.2</junit.version>

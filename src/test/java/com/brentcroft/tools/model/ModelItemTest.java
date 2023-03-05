@@ -206,48 +206,6 @@ public class ModelItemTest
     }
 
 
-    @Test
-    public void usesWhileDo() {
-        item
-                .appendFromJson( "{ digits: [ 'a', 'b', 'c', '3', '5', '6', '7', '8', '9' ] }" );
-
-        Object actual = item
-                .whileDo( "digits.size() > 0", "digits.remove( digits[0] )", 12 )
-                .eval( "digits" );
-
-        assertEquals( Collections.emptyList(), actual );
-    }
-
-
-    @Test
-    public void usesWhileDoAll() {
-        item
-                .appendFromJson( "{ digits: [ 'a', 'b', 'c', '3', '5', '6', '7', '8', '9' ] }" );
-
-        Object actual = item
-                .whileDoAll(
-                        "digits.size() > 0",
-                        Stream
-                                .of(
-                                        "digits.remove( digits[0] )",
-                                        "c:println( digits[0] )" )
-                                .collect( Collectors.toList()),
-                        12 )
-                .eval( "digits" );
-
-        assertEquals( Collections.emptyList(), actual );
-    }
-
-    @Test
-    public void usesWhileDoAllInSteps() {
-        item
-                .appendFromJson( "{ digits: [ 'a', 'b', 'c', '3', '5', '6', '7', '8', '9' ] }" );
-        item
-                .steps( "$self.whileDoAll( 'digits.size() > 0', [ 'digits.remove( digits[0] )', 'c:println( digits[0] )' ], 12)" );
-        Object actual = item.eval( "digits" );
-        assertEquals( Collections.emptyList(), actual );
-    }
-
 
     @Test
     public void usesNativeWhileDo() {

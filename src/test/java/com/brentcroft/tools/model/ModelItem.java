@@ -25,7 +25,6 @@ public class ModelItem extends AbstractModelItem implements Parented
 
         em.addSecondaryResolvers(
                 new ConditionalMethodsELResolver(
-                        em.getELContextFactory(),
                         AbstractModelItem.scopeStack,
                         AbstractModelItem.staticModel),
                 new SimpleMapELResolver(

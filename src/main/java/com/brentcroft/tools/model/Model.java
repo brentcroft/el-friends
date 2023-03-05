@@ -8,7 +8,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.BiFunction;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -312,124 +311,6 @@ public interface Model extends Map< String, Object >
         {
             ( ( Model ) item ).introspectEntries();
         }
-    }
-
-    default Model tryExcept( Object operation, Object onExceptionOperations )
-    {
-        String ops = stepsText( operation );
-        String exOps = stepsText( onExceptionOperations );
-        try
-        {
-            steps( ops );
-        }
-        catch ( Exception e )
-        {
-            System.out.printf( "Handling exception: [%s]: %s%n", e.getClass().getSimpleName(), e.getMessage() );
-            Map< String, Object > local = new HashMap<>();
-            local.put( "exception", e );
-            steps( exOps, local );
-        }
-        return this;
-    }
-
-    default Model whileDo( String booleanTest, Object operation, int maxTries )
-    {
-        int[] tries = { 0 };
-        List< String > ops = stepsList( operation );
-        Supplier< Boolean > whileTest = () -> {
-            try
-            {
-                boolean test = ( Boolean ) eval( expand( booleanTest ) );
-                if ( tries[ 0 ] > 0 || ! test )
-                {
-                    notifyModelEvent(
-                            ModelEvent
-                                    .EventType
-                                    .WHILE_DO_TEST
-                                    .newEvent( this, format( "whileDo [%d]: test: '%s' == %s", tries[ 0 ], booleanTest, test ) ) );
-                }
-                return test;
-            }
-            catch ( Exception e )
-            {
-                if ( e.getCause() instanceof Supplier )
-                {
-                    Object value = ( ( Supplier< ? > ) e.getCause() ).get();
-                    if ( value instanceof Boolean )
-                    {
-                        return ( Boolean ) value;
-                    }
-                }
-                notifyModelEvent(
-                        ModelEvent
-                                .EventType
-                                .WHILE_DO_TEST
-                                .newEvent( this, format(
-                                        "whileDo: test [%d: %s]; [%s] %s",
-                                        tries[ 0 ], booleanTest,
-                                        e.getClass().getSimpleName(),
-                                        e.getMessage() ) ) );
-                return true;
-            }
-        };
-        while ( whileTest.get() && tries[ 0 ] < maxTries )
-        {
-            tries[ 0 ]++;
-            ops.forEach( op -> {
-                try
-                {
-                    eval( expand( op ) );
-                }
-                catch ( Exception e )
-                {
-                    if ( e.getCause() instanceof Supplier )
-                    {
-                        throw ( RuntimeException ) e.getCause();
-                    }
-                    notifyModelEvent(
-                            ModelEvent
-                                    .EventType
-                                    .WHILE_DO_OPERATION
-                                    .newEvent( this, format(
-                                            "whileDo: operation [%d: %s]; [%s] %s",
-                                            tries[ 0 ], op,
-                                            e.getClass().getSimpleName(),
-                                            e.getMessage() ) ) );
-                }
-            } );
-        }
-        if ( tries[ 0 ] >= maxTries )
-        {
-            throw new RanOutOfTriesException( tries[ 0 ], booleanTest );
-        }
-        return this;
-    }
-
-    default Model whileDoAll( String booleanTest, List< String > operations, int maxTries )
-    {
-        return whileDo( booleanTest, operations, maxTries );
-    }
-
-    default Model ifThen( String booleanTest, Object thenOps )
-    {
-        if ( ( Boolean ) eval( expand( booleanTest ) ) )
-        {
-            steps( stepsText( thenOps ) );
-        }
-        return this;
-    }
-
-    default Model ifThenElse( String booleanTest, Object thenOps, Object elseOps )
-    {
-        if ( ( Boolean ) eval( expand( booleanTest ) ) )
-        {
-            steps( stepsText( thenOps ) );
-        }
-        else
-        {
-            steps( stepsText( elseOps ) );
-        }
-        return this;
     }
 
     void maybeDelay();
