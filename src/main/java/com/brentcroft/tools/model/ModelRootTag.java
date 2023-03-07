@@ -21,10 +21,10 @@ import java.util.stream.Collectors;
 public enum ModelRootTag implements FlatTag< Model >
 {
     DOCUMENT_ELEMENT( "*",
-            ( model, event ) -> event.asStringMap().forEach( (k,v) -> model.put( "$" + k.trim(), v.trim() ) ),
-            ( model, text) -> model.introspectEntries(),
+            ( model, event ) -> event.asStringMap().forEach( ( k, v ) -> model.put( "$" + k.trim(), v.trim() ) ),
+            ( model, text ) -> model.introspectEntries(),
             ModelTag.MODEL.getChildren()
-            ),
+    ),
     DOCUMENT_ROOT( "", DOCUMENT_ELEMENT );
 
     private final String tag;
@@ -35,17 +35,18 @@ public enum ModelRootTag implements FlatTag< Model >
     private final Tag< ? super Model, ? >[] children;
 
     @SafeVarargs
-    ModelRootTag( String tag, BiConsumer< Model, OpenEvent> opener, BiConsumer< Model, String> closer, Tag< ? super Model, ? >... children )
+    ModelRootTag( String tag, BiConsumer< Model, OpenEvent > opener, BiConsumer< Model, String > closer, Tag< ? super Model, ? >... children )
     {
         this.tag = tag;
         this.opener = Opener.flatOpener( opener );
         this.closer = Closer.flatCloser( closer );
         this.children = children;
     }
+
     @SafeVarargs
     ModelRootTag( String tag, Tag< ? super Model, ? >... children )
     {
-        this(tag, null, null, children);
+        this( tag, null, null, children );
     }
 }
 
@@ -54,10 +55,10 @@ enum ModelTag implements StepTag< Model, Model >
 {
     MODEL(
             "model",
-            ( model, event ) -> event.asStringMap().forEach( (k,v) -> model.put( "$" + k.trim(), v.trim() ) ),
-            ( model, text) -> model.introspectEntries()
+            ( model, event ) -> event.asStringMap().forEach( ( k, v ) -> model.put( "$" + k.trim(), v.trim() ) ),
+            ( model, text ) -> model.introspectEntries()
     ),
-    SHADOW("shadow");
+    SHADOW( "shadow" );
 
     private final boolean multiple = true;
     private final boolean choice = true;
@@ -65,23 +66,25 @@ enum ModelTag implements StepTag< Model, Model >
     private final FlatOpener< Model, OpenEvent > opener;
     private final FlatCloser< Model, String > closer;
 
-    ModelTag( String tag, BiConsumer< Model, OpenEvent> opener, BiConsumer< Model, String> closer )
+    ModelTag( String tag, BiConsumer< Model, OpenEvent > opener, BiConsumer< Model, String > closer )
     {
         this.tag = tag;
         this.opener = Opener.flatOpener( opener );
         this.closer = Closer.flatCloser( closer );
     }
-    ModelTag(String tag) {
-        this(tag, null, null);
+
+    ModelTag( String tag )
+    {
+        this( tag, null, null );
     }
 
     @Override
     public Model getItem( Model model, OpenEvent event )
     {
         Model child = model.newItem();
-        child.setName( SHADOW.equals(event.getTag())
-                ? "$shadow"
-                : event.getAttribute( "key" ) );
+        child.setName( SHADOW.equals( event.getTag() )
+                       ? "$shadow"
+                       : event.getAttribute( "key" ) );
         child.setParent( model );
         model.put( child.getName(), child );
         return child;
@@ -117,7 +120,20 @@ enum EntryTag implements FlatTag< Model >
     EL(
             "el",
             ( model, event ) -> event.getAttribute( "key" ),
-            ( model, text, key ) -> model.put( key, model.eval( text.trim() )  ) ),
+            ( model, text, key ) -> model.put( key, model.eval( text.trim() ) ) ),
+
+    STEPS(
+            "steps",
+            ( model, event ) -> event.getAttribute( "key" ),
+            ( model, text, key ) -> {
+                String expression = Model
+                        .stepsStream( text.trim() )
+                        .collect( Collectors.joining( ";\n" ) );
+                model.put( key, expression );
+
+                Object compiledExpression = model.getELCompiler().apply( expression );
+                model.put( "$" + key, compiledExpression );
+            } ),
 
     JSON(
             "json",
@@ -139,13 +155,6 @@ enum EntryTag implements FlatTag< Model >
             ( model, event ) -> event.getAttribute( "key" ),
             ( model, text, key ) -> model.put( key, text.trim() ) ),
 
-    STEPS(
-            "steps",
-            ( model, event ) -> event.getAttribute( "key" ),
-            ( model, text, key ) -> model.put( key, Model
-                    .stepsStream( text.trim() )
-                    .collect( Collectors.joining(";\n"))  ) ),
-
     TEXT(
             "text",
             ( model, event ) -> event.getAttribute( "key" ),
@@ -154,41 +163,40 @@ enum EntryTag implements FlatTag< Model >
     BOOLEAN(
             "boolean",
             ( model, event ) -> event.getAttribute( "key" ),
-            ( model, text, key ) -> model.put( key, Boolean.parseBoolean( text.trim() )  ) ),
+            ( model, text, key ) -> model.put( key, Boolean.parseBoolean( text.trim() ) ) ),
 
     INTEGER(
             "integer",
             ( model, event ) -> event.getAttribute( "key" ),
-            ( model, text, key ) -> model.put( key, Integer.parseInt( text.trim() )  ) ),
+            ( model, text, key ) -> model.put( key, Integer.parseInt( text.trim() ) ) ),
     LONG(
             "long",
             ( model, event ) -> event.getAttribute( "key" ),
-            ( model, text, key ) -> model.put( key, Long.parseLong( text.trim() )  ) ),
+            ( model, text, key ) -> model.put( key, Long.parseLong( text.trim() ) ) ),
     DOUBLE(
             "double",
             ( model, event ) -> event.getAttribute( "key" ),
-            ( model, text, key ) -> model.put( key, Double.parseDouble( text.trim() )  ) ),
+            ( model, text, key ) -> model.put( key, Double.parseDouble( text.trim() ) ) ),
     BIG_INTEGER(
             "big-integer",
             ( model, event ) -> event.getAttribute( "key" ),
-            ( model, text, key ) -> model.put( key, new BigInteger( text.trim() )  ) ),
+            ( model, text, key ) -> model.put( key, new BigInteger( text.trim() ) ) ),
     BIG_DECIMAL(
             "big-decimal",
             ( model, event ) -> event.getAttribute( "key" ),
-            ( model, text, key ) -> model.put( key, new BigDecimal( text.trim() )  ) ),
+            ( model, text, key ) -> model.put( key, new BigDecimal( text.trim() ) ) ),
     DATE(
             "date",
             ( model, event ) -> event.getAttribute( "key" ),
-            ( model, text, key ) -> model.put( key, LocalDate.parse( text.trim() )  ) ),
+            ( model, text, key ) -> model.put( key, LocalDate.parse( text.trim() ) ) ),
     DATETIME(
             "datetime",
             ( model, event ) -> event.getAttribute( "key" ),
-            ( model, text, key ) -> model.put( key, LocalDateTime.parse( text.trim() )  ) ),
+            ( model, text, key ) -> model.put( key, LocalDateTime.parse( text.trim() ) ) ),
     DURATION(
             "duration",
             ( model, event ) -> event.getAttribute( "key" ),
-            ( model, text, key ) -> model.put( key, Duration.parse( text.trim() )  ) )
-    ;
+            ( model, text, key ) -> model.put( key, Duration.parse( text.trim() ) ) );
 
     private final String tag;
     private final boolean multiple = false;

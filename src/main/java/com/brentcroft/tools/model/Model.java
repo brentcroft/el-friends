@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -19,6 +20,8 @@ public interface Model extends Map< String, Object >
     Expander getExpander();
 
     Evaluator getEvaluator();
+
+    ELCompiler getELCompiler();
 
     default void notifyModelEvent( ModelEvent modelEvent )
     {
@@ -320,6 +323,10 @@ public interface Model extends Map< String, Object >
     }
 
     interface Evaluator extends BiFunction< String, Map< String, Object >, Object >
+    {
+    }
+
+    interface ELCompiler extends Function< String, Object >
     {
     }
 }

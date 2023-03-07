@@ -18,17 +18,14 @@ public class ModelItem extends AbstractModelItem implements Parented
                 .getELTemplateManager();
 
         em.addPrimaryResolvers(
-                new MapStepsELResolver(
-                        em,
-                        em,
-                        AbstractModelItem.staticModel ) );
+                new ThreadLocalRootResolver( AbstractModelItem.scopeStack ) );
 
         em.addSecondaryResolvers(
-                new ConditionalMethodsELResolver(
-                        AbstractModelItem.scopeStack,
-                        AbstractModelItem.staticModel),
-                new SimpleMapELResolver(
-                        AbstractModelItem.staticModel ) );
+                new MapMethodELResolver(),
+                new CompiledStepsResolver( AbstractModelItem.scopeStack ),
+                new MapStepsELResolver( em, em ),
+                new ConditionalMethodsELResolver( AbstractModelItem.scopeStack ),
+                new SimpleMapELResolver( AbstractModelItem.staticModel ) );
 
         ImportHandler ih = em
                 .getELContextFactory()
@@ -46,7 +43,6 @@ public class ModelItem extends AbstractModelItem implements Parented
     public Map< String, Object > newContainer()
     {
         MapBindings bindings = new MapBindings( this );
-        bindings.put( "$local", AbstractModelItem.scopeStack.get().peek() );
         bindings.put( "$self", this );
         bindings.put( "$parent", getParent() );
         bindings.put( "$static", AbstractModelItem.staticModel );
@@ -59,9 +55,15 @@ public class ModelItem extends AbstractModelItem implements Parented
         return jstl::expandText;
     }
 
-    @Override
+   @Override
     public Evaluator getEvaluator()
     {
         return jstl::eval;
+    }
+
+    @Override
+    public ELCompiler getELCompiler()
+    {
+        return jstl::compile;
     }
 }
