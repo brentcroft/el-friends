@@ -131,8 +131,9 @@ enum EntryTag implements FlatTag< Model >
                         .collect( Collectors.joining( ";\n" ) );
                 model.put( key, expression );
 
-                Object compiledExpression = model.getELCompiler().apply( expression );
-                model.put( "$" + key, compiledExpression );
+                // test compile expression
+                model.getELCompiler().apply( expression );
+                //model.put( "$" + key, compiledExpression );
             } ),
 
     JSON(
