@@ -17,15 +17,8 @@ public class ModelItem extends AbstractModelItem implements Parented
         ELTemplateManager em = jstl
                 .getELTemplateManager();
 
-        em.addPrimaryResolvers(
-                new ThreadLocalRootResolver( AbstractModelItem.scopeStack ) );
-
-        em.addSecondaryResolvers(
-                new MapMethodELResolver(),
-                new CompiledStepsResolver( AbstractModelItem.scopeStack ),
-                new MapStepsELResolver( em, em ),
-                new ConditionalMethodsELResolver( AbstractModelItem.scopeStack ),
-                new SimpleMapELResolver( AbstractModelItem.staticModel ) );
+        AbstractModelItem.scopeStack = em.getELContextFactory().getScopeStack();
+        AbstractModelItem.staticModel = em.getELContextFactory().getStaticModel();
 
         ImportHandler ih = em
                 .getELContextFactory()
@@ -45,7 +38,6 @@ public class ModelItem extends AbstractModelItem implements Parented
         MapBindings bindings = new MapBindings( this );
         bindings.put( "$self", this );
         bindings.put( "$parent", getParent() );
-        bindings.put( "$static", AbstractModelItem.staticModel );
         return bindings;
     }
 

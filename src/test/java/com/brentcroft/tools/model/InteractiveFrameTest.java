@@ -13,7 +13,6 @@ public class InteractiveFrameTest
     @Before
     public void setCurrentDirectory() {
         item.setCurrentDirectory( Paths.get( "src/test/resources" ) );
-        item.getStaticModel().clear();
         item.appendFromJson( "{ '$xml': 'brentcroft-site.xml' }" );
     }
 

@@ -35,12 +35,6 @@ public interface Model extends Map< String, Object >
 
     Object set( String key, Object value );
 
-    Object putStatic( String key, Object value );
-
-    Map< String, Object > getStaticModel();
-
-    Stack< Map< String, Object > > getScopeStack();
-
     /**
      * Expands a value using the expander
      * or else just returns the value.
@@ -119,7 +113,7 @@ public interface Model extends Map< String, Object >
 
     default Object steps( String steps )
     {
-        return steps( steps, new HashMap<>() );
+        return steps( steps, this );
     }
 
     default Object call( String key, Map< String, Object > args )
@@ -129,7 +123,7 @@ public interface Model extends Map< String, Object >
 
     default Object call( String key )
     {
-        return call( key, new HashMap<>() );
+        return call( key, this );
     }
 
     String toJson();

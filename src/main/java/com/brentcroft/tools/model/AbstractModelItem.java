@@ -47,12 +47,8 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
 
 
     private static final ThreadLocal< Stack< Path > > pathStack = ThreadLocal.withInitial( Stack::new );
-    protected static final Map< String, Object > staticModel = new LinkedHashMap<>();
-    protected static final ThreadLocal< Stack< Map< String, Object > > > scopeStack = ThreadLocal.withInitial( () -> {
-        Stack< Map< String, Object > > s = new Stack<>();
-        s.push( new HashMap<>() );
-        return s;
-    } );
+    public static Map< String, Object > staticModel;
+    public static ThreadLocal< Stack< Map< String, Object > > > scopeStack;
 
 
     static
@@ -74,11 +70,6 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
         {
             throw new ModelException( format( "Bad stringification: %s", value ), e );
         }
-    }
-
-    public Stack< Map< String, Object > > getScopeStack()
-    {
-        return scopeStack.get();
     }
 
     protected static String readFileFully( File file )
@@ -126,20 +117,6 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
     public Object set( String key, Object value )
     {
         return super.put( key, value );
-    }
-
-    public Object putStatic( String key, Object value )
-    {
-        if ( staticModel.containsKey( key ) )
-        {
-            return staticModel.get( key );
-        }
-        return staticModel.put( key, value );
-    }
-
-    public Map< String, Object > getStaticModel()
-    {
-        return staticModel;
     }
 
     public Path getCurrentDirectory()

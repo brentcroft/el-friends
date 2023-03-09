@@ -12,9 +12,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -26,7 +24,6 @@ public class ModelItemTest
     public void setCurrentDirectory()
     {
         item.setCurrentDirectory( Paths.get( "src/test/resources" ) );
-        item.getStaticModel().clear();
     }
 
     @Test
@@ -285,7 +282,9 @@ public class ModelItemTest
     @Test
     public void usesStaticScope()
     {
-        Object oldValue = item.putStatic( "vegetable", "carrot" );
+        Object oldValue = AbstractModelItem
+                .staticModel
+                .put( "vegetable", "carrot" );
         assertNull( oldValue );
         assertEquals( "carrot", item.eval( "vegetable" ) );
 
@@ -319,7 +318,7 @@ public class ModelItemTest
         assertEquals( "cabbage", new ModelItem().eval( "vegetable" ) );
 
         Object result = item.steps( "$local.vegetable = 'chard'; $self.vegetable = 'cabbage'; vegetable" );
-        assertEquals( "chard", result );
+        assertEquals( "cabbage", result );
         assertEquals( "cabbage", item.eval( "vegetable" ) );
 
         assertEquals( "cabbage", new ModelItem().eval( "vegetable" ) );
