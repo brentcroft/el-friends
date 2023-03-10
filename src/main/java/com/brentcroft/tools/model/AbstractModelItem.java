@@ -1,5 +1,6 @@
 package com.brentcroft.tools.model;
 
+import com.brentcroft.tools.jstl.MapBindings;
 import com.brentcroft.tools.materializer.Materializer;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -48,7 +49,7 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
 
     private static final ThreadLocal< Stack< Path > > pathStack = ThreadLocal.withInitial( Stack::new );
     public static Map< String, Object > staticModel;
-    public static ThreadLocal< Stack< Map< String, Object > > > scopeStack;
+    public static ThreadLocal< Stack< MapBindings > > scopeStack;
 
 
     static
@@ -397,7 +398,7 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
 
         public Object run( Map< String, Object > argMap )
         {
-            scopeStack.get().push( argMap );
+            scopeStack.get().push( new MapBindings( argMap ) );
 
             try
             {
