@@ -1,6 +1,6 @@
 package com.brentcroft.tools.model;
 
-import com.brentcroft.tools.jstl.MapBindings;
+import com.brentcroft.tools.el.MapBindings;
 import com.brentcroft.tools.materializer.Materializer;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
