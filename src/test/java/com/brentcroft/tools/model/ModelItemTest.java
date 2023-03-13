@@ -118,9 +118,9 @@ public class ModelItemTest
     public void loadsNestedFiles()
     {
         item.appendFromJson( "{ '$json': 'nested-01.json' }" );
-        assertEquals( 3, item.get( "level" ) );
-        assertEquals( "3", item.expand( "${level}" ) );
-        assertEquals( 3, item.eval( "level" ) );
+        assertEquals( 1, item.get( "level" ) );
+        assertEquals( "1", item.expand( "${level}" ) );
+        assertEquals( 1, item.eval( "level" ) );
 
         assertEquals( "plastic", item.eval( "days.wednesday.rubbish[2]" ) );
         assertEquals( 105, item.eval( "days.wednesday.rubbish[4]" ) );
@@ -252,13 +252,13 @@ public class ModelItemTest
 
         item.setName( "root" );
 
-        assertEquals( 3, item.get( "level" ) );
+        assertEquals( 1, item.get( "level" ) );
 
         item.eval( "incrementer.run()" );
 
         System.out.println( item.toJson() );
 
-        assertEquals( 4L, item.get( "level" ) );
+        assertEquals( 2L, item.get( "level" ) );
     }
 
     @Test
@@ -269,16 +269,16 @@ public class ModelItemTest
                 .insertFromJson( "incrementer", "{ '$$run': '$parent.level = $parent.level + 1' }" );
 
         item.setName( "root" );
-        assertEquals( 3, item.get( "level" ) );
+        assertEquals( 1, item.get( "level" ) );
 
         item.steps( "$self.level = level + 1; $self.level = level + 1; $self.level = level + 1; " );
-        assertEquals( 6L, item.get( "level" ) );
+        assertEquals( 4L, item.get( "level" ) );
 
         item.getItem( "incrementer" ).call( "$$run" );
-        assertEquals( 7L, item.get( "level" ) );
+        assertEquals( 5L, item.get( "level" ) );
 
         item.steps( "incrementer.run(); incrementer.run(); incrementer.run(); " );
-        assertEquals( 10L, item.get( "level" ) );
+        assertEquals( 8L, item.get( "level" ) );
     }
 
     @Test

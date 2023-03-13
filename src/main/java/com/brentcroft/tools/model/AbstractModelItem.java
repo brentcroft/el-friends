@@ -168,9 +168,9 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
         if ( containsKey( "$json" ) )
         {
             Stream
-                    .of(get( "$json" ).toString().split("\\s*,\\s*"))
+                    .of( get( "$json" ).toString().split( "\\s*,\\s*" ) )
                     .map( String::trim )
-                    .filter( filename -> !filename.isEmpty())
+                    .filter( filename -> ! filename.isEmpty() )
                     .forEach( filename -> {
                         File file = getLocalFile( filename );
                         putOnFileStack( file.toPath() );
@@ -189,9 +189,9 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
         {
             Object xmlValue = get( "$xml" );
             Stream
-                    .of(xmlValue.toString().split("\\s*,\\s*"))
+                    .of( xmlValue.toString().split( "\\s*,\\s*" ) )
                     .map( String::trim )
-                    .filter( filename -> !filename.isEmpty())
+                    .filter( filename -> ! filename.isEmpty() )
                     .forEach( filename -> {
                         File file = getLocalFile( filename );
                         putOnFileStack( file.toPath() );
@@ -214,17 +214,17 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
         if ( containsKey( "$properties" ) )
         {
             Stream
-                    .of(get( "$properties" ).toString().split("\\s*,\\s*"))
+                    .of( get( "$properties" ).toString().split( "\\s*,\\s*" ) )
                     .map( String::trim )
-                    .filter( filename -> !filename.isEmpty())
+                    .filter( filename -> ! filename.isEmpty() )
                     .forEach( filename -> overwritePropertiesFromFile( filename, false ) );
         }
         if ( containsKey( "$properties-xml" ) )
         {
             Stream
-                    .of(get( "$properties-xml" ).toString().split("\\s*,\\s*"))
+                    .of( get( "$properties-xml" ).toString().split( "\\s*,\\s*" ) )
                     .map( String::trim )
-                    .filter( filename -> !filename.isEmpty())
+                    .filter( filename -> ! filename.isEmpty() )
                     .forEach( filename -> overwritePropertiesFromFile( filename, true ) );
         }
         if ( containsKey( "$onload" ) )
@@ -276,6 +276,7 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
         putAll( item
                 .entrySet()
                 .stream()
+                .filter( entry -> ! containsKey( entry.getKey() ) )
                 .filter( entry -> ! entry.getKey().startsWith( "$onload" ) )
                 .filter( entry -> ! entry.getKey().startsWith( "$json" ) )
                 .filter( entry -> ! entry.getKey().startsWith( "$xml" ) )
