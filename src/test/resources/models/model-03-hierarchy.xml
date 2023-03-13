@@ -1,0 +1,71 @@
+<model-03 title="model-03-hierarchy" onload="$self.installStatics()">
+    <steps key="$$installStatics">
+        $static.log = ( text ) -> c:println( text );
+        $static.logf = ( fmt, args ) -> log( c:format( fmt, args ) );
+    </steps>
+    <el key="data">
+        [
+            { 'case': '4' },
+            { 'case': '5' },
+            { 'case': '6' }
+        ]
+    </el>
+    <text key="expectedData">[{"case":"4"},{"case":"5"},{"case":"6"}]</text>
+    <model key="cards">
+        <model key="spades" xml="cards-suit.xml"/>
+        <model key="hearts" xml="cards-suit.xml"/>
+        <model key="clubs" xml="cards-suit.xml"/>
+        <model key="diamonds" xml="cards-suit.xml"/>
+    </model>
+    <steps key="$$testHierarchy01">
+        $local.processData01 = ( d1 ) -> c:format( '%s', [ $self.stringify( d1 ) ] );
+        $local.processData02 = ( d2 ) -> processData01( d2 );
+        $local.processData03 = ( d3 ) -> processData02( d3 );
+        $local.processData04 = ( d4 ) -> processData03( d4 );
+        $local.processData05 = ( d5 ) -> processData04( d5 );
+        $local.actualData = processData05( data );
+        c:assertTrue(
+            expectedData == actualData.replaceAll( '\\s+', '' ),
+            c:format( 'Unexpected actual: %s', [ actualData ] )
+        );
+    </steps>
+    <steps key="$$testHierarchy02">
+        $local.processData01 = ( data ) -> c:format( '%s', [ $self.stringify( data ) ] );
+        $local.processData02 = ( data ) -> processData01( data );
+        $local.processData03 = ( data ) -> processData02( data );
+        $local.processData04 = ( data ) -> processData03( data );
+        $local.processData05 = ( data ) -> processData04( data );
+        $local.actualData = processData05( data );
+        c:assertTrue(
+            expectedData == actualData.replaceAll( '\\s+', '' ),
+            c:format( 'Unexpected actual: %s', [ actualData ] )
+        );
+    </steps>
+    <steps key="$$testHierarchy03">
+        $local.processData01 = ( x ) -> c:format( '%s', [ $self.stringify( data ) ] );
+        $local.processData02 = ( x ) -> processData01( x );
+        $local.processData03 = ( x ) -> processData02( x );
+        $local.processData04 = ( x ) -> processData03( x );
+        $local.processData05 = ( x ) -> processData04( x );
+        $local.actualData = processData05( 1 );
+        c:assertTrue(
+            expectedData == actualData.replaceAll( '\\s+', '' ),
+            c:format( 'Unexpected actual: %s', [ actualData ] )
+        );
+    </steps>
+    <steps key="$$testHierarchyConditionals">
+
+        $local.processData01 = ( d ) -> d[1].case;
+        $local.processData02 = ( d ) -> processData01( d );
+
+        cards.tryExcept(
+            () -> [
+                c:println( processData02( $parent.data ) ),
+                c:println( c:format( '%s: spades', [ $functionName ] ) ),
+                c:delay( 50 )
+            ],
+            ( e ) -> e.printStackTrace(),
+            ( seconds ) -> c:println( c:format( 'taking: %.2f seconds', [ seconds ] ) )
+        );
+    </steps>
+</model-03>

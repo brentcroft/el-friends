@@ -55,8 +55,13 @@ enum ModelTag implements StepTag< Model, Model >
 {
     MODEL(
             "model",
-            ( model, event ) -> event.asStringMap().forEach( ( k, v ) -> model.put( "$" + k.trim(), v.trim() ) ),
-            ( model, text ) -> model.introspectEntries()
+            ( model, event ) -> {
+                event.asStringMap().forEach( ( k, v ) -> model.put( "$" + k.trim(), v.trim() ) );
+                model.introspectEntries();
+            },
+            ( model, text ) -> {
+                //
+            }
     ),
     SHADOW( "shadow" );
 

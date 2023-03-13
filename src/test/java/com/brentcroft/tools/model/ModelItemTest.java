@@ -1,5 +1,6 @@
 package com.brentcroft.tools.model;
 
+import com.brentcroft.tools.el.SimpleELContextFactory;
 import com.brentcroft.tools.materializer.TagValidationException;
 import org.junit.Before;
 import org.junit.Test;
@@ -24,6 +25,7 @@ public class ModelItemTest
     public void setCurrentDirectory()
     {
         item.setCurrentDirectory( Paths.get( "src/test/resources" ) );
+        SimpleELContextFactory.clean();
     }
 
     @Test

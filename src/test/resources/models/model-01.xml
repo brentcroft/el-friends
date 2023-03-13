@@ -1,0 +1,15 @@
+<model-01 title="model-01">
+    <el key="data">
+        [
+            { 'case': '1' },
+            { 'case': '2' },
+            { 'case': '3' }
+        ]
+    </el>
+    <el key="log">( text ) -> c:println( text )</el>
+    <el key="logf">( fmt, args ) -> log( c:format( fmt, args ) )</el>
+    <steps key="$$testLambdaArgs">
+        log( data );
+        logf( 'Second case: %s', [ data[ 1 ] ] );
+    </steps>
+</model-01>

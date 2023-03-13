@@ -1,0 +1,15 @@
+<model key="card-suit">
+    <model key="ace"/>
+    <model key="two"/>
+    <model key="three"/>
+    <model key="four"/>
+    <model key="five"/>
+    <model key="six"/>
+    <model key="seven"/>
+    <model key="eight"/>
+    <model key="nine"/>
+    <model key="ten"/>
+    <model key="jack"/>
+    <model key="queen"/>
+    <model key="king"/>
+</model>

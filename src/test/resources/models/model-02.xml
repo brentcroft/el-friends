@@ -1,0 +1,17 @@
+<model-02 title="model-02" onload="$self.installStaticLambdas()">
+    <steps key="$$installStaticLambdas">
+        $static.log = ( text ) -> c:println( text );
+        $static.logf = ( fmt, args ) -> log( c:format( fmt, args ) );
+    </steps>
+    <el key="data">
+        [
+            { 'case': '4' },
+            { 'case': '5' },
+            { 'case': '6' }
+        ]
+    </el>
+    <steps key="$$testStaticLambdas">
+        log( data );
+        logf( 'Second case: %s', [ data[ 1 ] ] );
+    </steps>
+</model-02>
