@@ -25,11 +25,19 @@ public interface Model extends Map< String, Object >
 
     default void notifyModelEvent( ModelEvent modelEvent )
     {
-        System.out.printf(
-                "%s%n",
-//                modelEvent.getSource(),
-//                modelEvent.getEventType(),
-                modelEvent.getMessage() );
+        switch(modelEvent.getEventType()) {
+
+            case MESSAGE:
+                System.out.printf( "%s%n", modelEvent.getMessage() );
+                break;
+            case EXCEPTION:
+                System.out.printf( "%s%n", modelEvent.getMessage() );
+                modelEvent.getException().printStackTrace();
+                break;
+            default:
+                // ignored
+                break;
+        }
     }
 
 
