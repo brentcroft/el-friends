@@ -5,6 +5,8 @@ import com.brentcroft.tools.materializer.Materializer;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.json.JsonReadFeature;
+import com.fasterxml.jackson.core.util.DefaultIndenter;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.Getter;
@@ -33,11 +35,13 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
 {
     public static String OPERATION_DELAY_MILLIS = "$operationDelayMillis";
 
-    protected static Materializer< Properties > PROPERTIES_XML_MATERIALIZER = new Materializer<>(
+    private static final ThreadLocal< Stack< Path > > pathStack = ThreadLocal.withInitial( Stack::new );
+
+    public static final Materializer< Properties > PROPERTIES_XML_MATERIALIZER = new Materializer<>(
             () -> PropertiesRootTag.ROOT,
             Properties::new );
 
-    protected static JsonMapper JSON_MAPPER = JsonMapper
+    public static final JsonMapper JSON_MAPPER = JsonMapper
             .builder()
             .enable( JsonReadFeature.ALLOW_JAVA_COMMENTS )
             .enable( JsonReadFeature.ALLOW_SINGLE_QUOTES )
@@ -46,8 +50,9 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
             .enable( JsonReadFeature.ALLOW_TRAILING_COMMA )
             .build();
 
+    public static DefaultPrettyPrinter PRETTY_PRINTER = new DefaultPrettyPrinter();
 
-    private static final ThreadLocal< Stack< Path > > pathStack = ThreadLocal.withInitial( Stack::new );
+
     public static Map< String, Object > staticModel;
     public static ThreadLocal< Stack< MapBindings > > scopeStack;
 
@@ -57,6 +62,8 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
         JSON_MAPPER.registerModule( new JavaTimeModule() );
         JSON_MAPPER.setSerializationInclusion( JsonInclude.Include.NON_NULL );
         JSON_MAPPER.setSerializationInclusion( JsonInclude.Include.NON_EMPTY );
+
+        PRETTY_PRINTER.indentArraysWith( DefaultIndenter.SYSTEM_LINEFEED_INSTANCE );
     }
 
     public static String stringify( Object value )
@@ -64,7 +71,7 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
         try
         {
             return JSON_MAPPER
-                    .writerWithDefaultPrettyPrinter()
+                    .writer( PRETTY_PRINTER )
                     .writeValueAsString( value );
         }
         catch ( JsonProcessingException e )
@@ -348,7 +355,7 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
         try
         {
             return JSON_MAPPER
-                    .writerWithDefaultPrettyPrinter()
+                    .writer( PRETTY_PRINTER )
                     .writeValueAsString( this );
         }
         catch ( JsonProcessingException e )
