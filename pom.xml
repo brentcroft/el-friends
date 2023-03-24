@@ -5,7 +5,7 @@
 
 	<groupId>com.brentcroft.tools</groupId>
 	<artifactId>el-model</artifactId>
-	<version>01.01.30</version>
+	<version>01.01.31</version>
 
 	<name>Brentcroft EL Model</name>
 
@@ -38,7 +38,7 @@
 	</scm>
 
 	<properties>
-		<el-plates.version>01.02.28</el-plates.version>
+		<el-plates.version>01.02.29</el-plates.version>
 		<materializer.version>00.01.06</materializer.version>
 		<jackson.version>2.14.2</jackson.version>
 		<junit.version>4.13.2</junit.version>

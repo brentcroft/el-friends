@@ -56,14 +56,15 @@ public abstract class AbstractModelItem extends LinkedHashMap< String, Object > 
     public static Map< String, Object > staticModel;
     public static ThreadLocal< Stack< MapBindings > > scopeStack;
 
-
     static
     {
         JSON_MAPPER.registerModule( new JavaTimeModule() );
-        JSON_MAPPER.setSerializationInclusion( JsonInclude.Include.NON_NULL );
-        JSON_MAPPER.setSerializationInclusion( JsonInclude.Include.NON_EMPTY );
 
-        PRETTY_PRINTER.indentArraysWith( DefaultIndenter.SYSTEM_LINEFEED_INSTANCE );
+        //JSON_MAPPER.setSerializationInclusion( JsonInclude.Include.NON_NULL );
+        //JSON_MAPPER.setSerializationInclusion( JsonInclude.Include.NON_EMPTY );
+
+        // example
+        //PRETTY_PRINTER.indentArraysWith( DefaultIndenter.SYSTEM_LINEFEED_INSTANCE );
     }
 
     public static String stringify( Object value )
