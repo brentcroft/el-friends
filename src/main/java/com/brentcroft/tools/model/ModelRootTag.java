@@ -129,8 +129,10 @@ enum EntryTag implements FlatTag< Model >
 
     STEPS(
             "steps",
-            ( model, event ) -> event.getAttribute( "key" ),
-            ( model, text, key ) -> {
+            ( model, event ) -> event,
+            ( model, text, event ) -> {
+
+                String key = event.getAttribute( "key" );
                 String expression = Model
                         .stepsStream( text.trim() )
                         .collect( Collectors.joining( ";\n" ) );
@@ -139,6 +141,12 @@ enum EntryTag implements FlatTag< Model >
                 // test compile expression
                 model.getELCompiler().apply( expression );
                 //model.put( "$" + key, compiledExpression );
+
+                // specification args
+                if (event.hasAttribute( "args")) {
+                    String args = event.getAttribute( "args");
+                    model.put( key + "$args", model.eval( args.trim() ) );
+                }
             } ),
 
     JSON(
